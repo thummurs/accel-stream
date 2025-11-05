@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<title>Accelerometer Logger</title>
+		<title>Accelerometer + Weather Logger</title>
 		<style>
 			:root {
 				--bg: #0f172a;
@@ -14,6 +14,8 @@
 				--ok: #10b981;
 				--warn: #f59e0b;
 				--bad: #ef4444;
+				--card: #0b1225;
+				--border: #1f2937;
 			}
 			html,
 			body {
@@ -29,10 +31,10 @@
 				align-items: flex-start;
 			}
 			main.card {
-				width: min(95vw, 900px);
-				margin-top: 20px;
-				background: #0b1225;
-				border: 1px solid #1f2937;
+				width: min(95vw, 1000px);
+				margin: 20px;
+				background: var(--card);
+				border: 1px solid var(--border);
 				border-radius: 18px;
 				padding: 20px;
 				box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
@@ -104,7 +106,7 @@
 			}
 			.tile {
 				background: #0b142a;
-				border: 1px solid #1f2937;
+				border: 1px solid var(--border);
 				border-radius: 12px;
 				padding: 8px 6px 10px;
 				text-align: center;
@@ -152,18 +154,35 @@
 			}
 			code {
 				background: #0b142a;
-				border: 1px solid #1f2937;
+				border: 1px solid var(--border);
 				padding: 2px 6px;
 				border-radius: 6px;
+			}
+			.weatherWrap {
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+				gap: 10px;
+				margin-top: 14px;
+			}
+			.chip {
+				display: inline-flex;
+				align-items: center;
+				gap: 6px;
+				background: #0b142a;
+				border: 1px solid var(--border);
+				padding: 6px 10px;
+				border-radius: 999px;
+				font-size: 12px;
+				color: var(--muted);
 			}
 		</style>
 	</head>
 	<body>
 		<main class="card" role="main" aria-labelledby="title">
-			<h1 id="title">Accelerometer Logger</h1>
+			<h1 id="title">Accelerometer + Weather Logger</h1>
 			<p class="meta">
-				Captures DeviceMotion at ~60 Hz on iOS and can stream to Firebase
-				Firestore in real-time.
+				Streams iPhone accelerometer and real-time weather to Firebase
+				Firestore.
 			</p>
 
 			<div class="row" aria-live="polite">
@@ -190,7 +209,6 @@
 					<div class="val" id="nVal">0</div>
 				</div>
 			</div>
-
 			<div class="grid">
 				<div class="tile">
 					<div class="label">ax (m/s²)</div>
@@ -205,7 +223,6 @@
 					<div class="val" id="azVal">0.00</div>
 				</div>
 			</div>
-
 			<div class="grid">
 				<div class="tile">
 					<div class="label">|a| (m/s²)</div>
@@ -220,9 +237,45 @@
 					<div class="val" id="hzVal">—</div>
 				</div>
 			</div>
-
 			<div class="ballWrap" aria-label="Motion visualization">
 				<div id="ball" class="ball"></div>
+			</div>
+
+			<div class="weatherWrap">
+				<div class="tile">
+					<div class="label">Weather (Dublin default)</div>
+					<div class="val">
+						<span id="wTemp">--</span>
+						°C
+						<span id="wIcon">⛅</span>
+					</div>
+					<div class="label" id="wDesc">—</div>
+				</div>
+				<div class="tile">
+					<div class="label">Wind</div>
+					<div class="val">
+						<span id="wWind">--</span>
+						km/h
+					</div>
+					<div class="label">
+						Dir:
+						<span id="wDir">--</span>
+						° |
+						<span id="wDay">Day/Night</span>
+					</div>
+				</div>
+				<div class="tile">
+					<div class="label">Last Weather Update</div>
+					<div class="val" id="wLast">—</div>
+					<div class="chip">
+						<input
+							id="useGPS"
+							type="checkbox"
+							style="accent-color: #22d3ee; margin-right: 6px"
+						/>
+						Use my GPS for weather
+					</div>
+				</div>
 			</div>
 
 			<div class="footer">
@@ -232,7 +285,9 @@
 				</div>
 				<div>
 					<code>DeviceMotionEvent</code>
-					+ Firebase Firestore
+					+
+					<code>Open-Meteo</code>
+					→ Firebase Firestore
 				</div>
 			</div>
 			<div class="sr" id="ariaLog" aria-live="polite"></div>
@@ -241,16 +296,16 @@
 		<script type="module">
 			import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js'
 			import {
+				getAuth,
+				signInAnonymously,
+				onAuthStateChanged,
+			} from 'https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js'
+			import {
 				getFirestore,
 				collection,
 				addDoc,
 				serverTimestamp,
 			} from 'https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js'
-			import {
-				getAuth,
-				signInAnonymously,
-				onAuthStateChanged,
-			} from 'https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js'
 
 			const firebaseConfig = {
 				apiKey: 'AIzaSyAu7YQkG2xRPNs9aGN4TUS3_LpInye72WA',
@@ -261,34 +316,19 @@
 				appId: '1:369697845903:web:05bccb3b0e7ba24c65b6fa',
 				measurementId: 'G-9BNGZDZ8VQ',
 			}
-
 			const app = initializeApp(firebaseConfig)
+			const auth = getAuth(app)
 			const db = getFirestore(app)
 			const accelCol = collection(db, 'accelerometerData')
-			const auth = getAuth(app)
-
-			const btnPerm = document.getElementById('btnPerm')
-			btnPerm.disabled = true
-
-			signInAnonymously(auth).catch(console.error)
-			onAuthStateChanged(auth, (user) => {
-				if (user) btnPerm.disabled = false
-			})
-
-			let isActive = false,
-				cloudMode = false
-			let startT = null,
-				lastT = null,
-				n = 0,
-				sumDt = 0
+			const weatherCol = collection(db, 'weatherData')
 
 			const led = document.getElementById('led')
 			const statusEl = document.getElementById('status')
+			const btnPerm = document.getElementById('btnPerm')
 			const btnStart = document.getElementById('btnStart')
 			const btnStop = document.getElementById('btnStop')
 			const btnCloud = document.getElementById('btnCloud')
 			const btnExport = document.getElementById('btnExport')
-
 			const timeVal = document.getElementById('timeVal')
 			const dtVal = document.getElementById('dtVal')
 			const nVal = document.getElementById('nVal')
@@ -301,6 +341,21 @@
 			const ariaLog = document.getElementById('ariaLog')
 			const ball = document.getElementById('ball')
 
+			const wTemp = document.getElementById('wTemp')
+			const wIcon = document.getElementById('wIcon')
+			const wDesc = document.getElementById('wDesc')
+			const wWind = document.getElementById('wWind')
+			const wDir = document.getElementById('wDir')
+			const wDay = document.getElementById('wDay')
+			const wLast = document.getElementById('wLast')
+			const useGPS = document.getElementById('useGPS')
+
+			let isActive = false,
+				cloudMode = false
+			let startT = null,
+				lastT = null,
+				n = 0,
+				sumDt = 0
 			let gxG = 0,
 				gyG = 0,
 				gzG = 0
@@ -309,11 +364,40 @@
 			const RATE_HZ = 10
 			let lastWrite = 0
 
+			let weatherTimer = null
+			let lat = 53.3498,
+				lon = -6.2603
+			let currentWeather = null
+
 			function setStatus(txt, on = false) {
 				statusEl.textContent = txt
 				led.className = 'led ' + (on ? 'on' : 'off')
 				ariaLog.textContent = txt
 			}
+			function nowISO() {
+				return new Date().toISOString()
+			}
+			function weatherInfo(code) {
+				const M = {
+					0: ['Clear', '☀️'],
+					1: ['Mainly Clear', '🌤️'],
+					2: ['Partly Cloudy', '⛅'],
+					3: ['Overcast', '☁️'],
+					61: ['Light Rain', '🌧️'],
+					63: ['Rain', '🌧️'],
+					65: ['Heavy Rain', '⛈️'],
+				}
+				return M[code] || ['Unknown', '🌡️']
+			}
+
+			btnStart.disabled = true
+			btnPerm.disabled = true
+			signInAnonymously(auth).catch(console.error)
+			onAuthStateChanged(auth, (user) => {
+				if (user) {
+					btnPerm.disabled = false
+				}
+			})
 
 			async function requestPermission() {
 				try {
@@ -340,26 +424,22 @@
 				lastT = startT
 				n = 0
 				sumDt = 0
-				gxG = 0
-				gyG = 0
-				gzG = 0
+				gxG = gyG = gzG = 0
 				rec.length = 0
 				btnStart.disabled = true
 				btnStop.disabled = false
 				btnExport.disabled = true
 				btnCloud.disabled = false
 				setStatus('Recording…', true)
-				window.addEventListener('devicemotion', onMotion, {
-					passive: true,
-				})
+				window.addEventListener('devicemotion', onMotion, { passive: true })
+
+				startWeather()
 			}
 
 			function stop() {
 				if (!isActive) return
 				isActive = false
-				window.removeEventListener('devicemotion', onMotion, {
-					passive: true,
-				})
+				window.removeEventListener('devicemotion', onMotion, { passive: true })
 				btnStart.disabled = false
 				btnStop.disabled = true
 				btnExport.disabled = rec.length === 0
@@ -367,6 +447,8 @@
 				btnCloud.textContent = 'Start Cloud Stream'
 				btnCloud.disabled = true
 				setStatus('Stopped', false)
+
+				stopWeather()
 			}
 
 			function onMotion(e) {
@@ -449,14 +531,13 @@
 				const meanDt = sumDt / Math.max(1, n - 1)
 				const meta = [
 					'# Accelerometer Log',
-					`# device=iPhone 15`,
-					`# api=DeviceMotionEvent`,
+					'# device=iPhone 15',
+					'# api=DeviceMotionEvent',
 					`# samples=${rec.length}`,
 					`# mean_dt_s=${meanDt.toFixed(6)}`,
 					`# inferred_hz=${(1 / meanDt).toFixed(3)}`,
-					`# columns=time_s,interval_s,ax_m_s2,ay_m_s2,az_m_s2,lax_m_s2,lay_m_s2,laz_m_s2,amag_m_s2,amag_hpf_m_s2`,
+					'# columns=time_s,interval_s,ax_m_s2,ay_m_s2,az_m_s2,lax_m_s2,lay_m_s2,laz_m_s2,amag_m_s2,amag_hpf_m_s2',
 				].join('\n')
-
 				const header =
 					'time_s,interval_s,ax_m_s2,ay_m_s2,az_m_s2,lax_m_s2,lay_m_s2,laz_m_s2,amag_m_s2,amag_hpf_m_s2'
 				const lines = rec.map((r) =>
@@ -480,14 +561,75 @@
 				const url = URL.createObjectURL(blob)
 				const a = document.createElement('a')
 				a.href = url
-				const ts = new Date().toISOString().replace(/[:.]/g, '-')
-				a.download = `accelerometer_${ts}.csv`
+				a.download = `accelerometer_${nowISO().replace(/[:.]/g, '-')}.csv`
 				document.body.appendChild(a)
 				a.click()
 				setTimeout(() => {
 					URL.revokeObjectURL(url)
 					a.remove()
 				}, 0)
+			}
+
+			async function fetchWeather() {
+				try {
+					const res = await fetch(
+						`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`
+					)
+					const data = await res.json()
+					const cw = data?.current_weather
+					if (!cw) return
+
+					currentWeather = cw
+					const [desc, icon] = weatherInfo(cw.weathercode)
+					wTemp.textContent =
+						cw.temperature?.toFixed?.(1) ?? cw.temperature ?? '--'
+					wIcon.textContent = icon
+					wDesc.textContent = desc
+					wWind.textContent = cw.windspeed ?? '--'
+					wDir.textContent = cw.winddirection ?? '--'
+					wDay.textContent = cw.is_day ? 'Day' : 'Night'
+					wLast.textContent = new Date().toLocaleTimeString()
+
+					await addDoc(weatherCol, {
+						ts: serverTimestamp(),
+						lat,
+						lon,
+						temperature_c: cw.temperature,
+						windspeed_kmh: cw.windspeed,
+						wind_dir_deg: cw.winddirection,
+						weathercode: cw.weathercode,
+						is_day: !!cw.is_day,
+						source: 'open-meteo',
+					})
+				} catch (e) {
+					console.error('Weather fetch/store error:', e)
+				}
+			}
+
+			function startWeather() {
+				if (useGPS.checked && navigator.geolocation) {
+					navigator.geolocation.getCurrentPosition(
+						(pos) => {
+							lat = pos.coords.latitude
+							lon = pos.coords.longitude
+							fetchWeather()
+						},
+						(err) => {
+							console.warn('GPS for weather failed:', err?.message)
+							fetchWeather()
+						},
+						{ enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+					)
+				} else {
+					fetchWeather()
+				}
+				weatherTimer = setInterval(fetchWeather, 30000)
+			}
+			function stopWeather() {
+				if (weatherTimer) {
+					clearInterval(weatherTimer)
+					weatherTimer = null
+				}
 			}
 
 			btnPerm.addEventListener('click', requestPermission)
