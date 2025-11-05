@@ -53,20 +53,27 @@
 				display: flex;
 				justify-content: center;
 				align-items: center;
-				gap: 12px;
-				margin-bottom: 14px;
+				gap: 14px;
+				margin-bottom: 12px;
 				width: 100%;
+			}
+			.btncol {
+				display: grid;
+				grid-template-columns: 1fr;
+				gap: 10px;
+				width: 100%;
+				max-width: 560px;
 			}
 			button {
 				all: unset;
 				cursor: pointer;
 				font-weight: 600;
-				padding: 10px 16px;
-				border-radius: 10px;
+				padding: 14px 16px;
+				border-radius: 12px;
 				text-align: center;
-				min-width: 160px;
 				background: #1f2937;
 				border: 1px solid #293241;
+				width: 100%;
 			}
 			button.primary {
 				background: var(--accent);
@@ -157,30 +164,6 @@
 				gap: 10px;
 				margin-top: 14px;
 			}
-			.chip {
-				display: inline-flex;
-				align-items: center;
-				gap: 6px;
-				background: #0b142a;
-				border: 1px solid var(--border);
-				padding: 6px 10px;
-				border-radius: 999px;
-				font-size: 12px;
-				color: var(--muted);
-			}
-			.tag {
-				padding: 2px 8px;
-				border-radius: 999px;
-				border: 1px solid #1f2a3a;
-				background: #0b142a;
-				color: #9ca3af;
-				font-size: 11px;
-			}
-			.badge {
-				display: inline-flex;
-				align-items: center;
-				gap: 6px;
-			}
 		</style>
 	</head>
 	<body>
@@ -193,14 +176,18 @@
 			</div>
 
 			<div class="row">
-				<button id="btnPermMotion" class="primary">Grant Motion</button>
-				<button id="btnPermLocation" class="primary">Grant Location</button>
+				<div class="btncol">
+					<button id="btnPermMotion" class="primary">Grant Motion</button>
+					<button id="btnPermLocation" class="primary">Grant Location</button>
+				</div>
 			</div>
 
 			<div class="row">
-				<button id="btnStart" disabled>Start</button>
-				<button id="btnStop" disabled class="warn">Stop</button>
-				<button id="btnCloud" disabled>Start Cloud Stream</button>
+				<div class="btncol">
+					<button id="btnStart" disabled>Start</button>
+					<button id="btnStop" disabled class="warn">Stop</button>
+					<button id="btnCloud" disabled>Start Cloud Stream</button>
+				</div>
 			</div>
 
 			<div class="grid">
@@ -276,11 +263,6 @@
 					<div class="val" id="wLast">—</div>
 				</div>
 			</div>
-
-			<div class="footer">
-				Streams write only when permission is granted and Cloud Stream is
-				active.
-			</div>
 		</main>
 
 		<script type="module">
@@ -309,8 +291,8 @@
 			const app = initializeApp(firebaseConfig)
 			const auth = getAuth(app)
 			const db = getFirestore(app)
-			const accelCol = collection(db, 'accelerometerData')
-			const weatherCol = collection(db, 'weatherData')
+			const colAccel = collection(db, 'accelerometerData')
+			const colWeather = collection(db, 'weatherData')
 
 			const led = document.getElementById('led'),
 				statusEl = document.getElementById('status')
@@ -338,8 +320,7 @@
 				wDay = document.getElementById('wDay'),
 				wLast = document.getElementById('wLast')
 
-			let authed = false,
-				motionGranted = false,
+			let motionGranted = false,
 				locationGranted = false,
 				isActive = false,
 				cloudMode = false
@@ -357,11 +338,8 @@
 				statusEl.textContent = t
 				led.className = 'led ' + (on ? 'on' : 'off')
 			}
-
-			function enableControls() {
+			function enableStart() {
 				btnStart.disabled = !(motionGranted || locationGranted)
-				btnStop.disabled = true
-				btnCloud.disabled = true
 			}
 
 			btnStart.disabled = true
@@ -369,10 +347,9 @@
 			btnPermLocation.disabled = true
 			signInAnonymously(auth)
 			onAuthStateChanged(auth, () => {
-				authed = true
 				btnPermMotion.disabled = false
 				btnPermLocation.disabled = false
-				enableControls()
+				enableStart()
 			})
 
 			btnPermMotion.onclick = async () => {
@@ -385,9 +362,7 @@
 						if (st !== 'granted') throw 0
 					}
 					motionGranted = true
-					enableControls()
-					if (isActive)
-						window.addEventListener('devicemotion', onMotion, { passive: true })
+					enableStart()
 				} catch {}
 			}
 			btnPermLocation.onclick = async () => {
@@ -400,8 +375,7 @@
 						)
 					)
 					locationGranted = true
-					enableControls()
-					if (isActive) startWeather()
+					enableStart()
 				} catch {}
 			}
 
@@ -415,7 +389,7 @@
 				gx = gy = gz = 0
 				btnStart.disabled = true
 				btnStop.disabled = false
-				btnCloud.disabled = true
+				btnCloud.disabled = false
 				setStatus('Recording', true)
 				if (motionGranted)
 					window.addEventListener('devicemotion', onMotion, { passive: true })
@@ -473,7 +447,7 @@
 					const now = performance.now()
 					if (now - lastWrite >= 100) {
 						lastWrite = now
-						addDoc(accelCol, {
+						addDoc(colAccel, {
 							ts: serverTimestamp(),
 							time: (t - startT) / 1000,
 							ax,
@@ -490,7 +464,7 @@
 			}
 
 			async function fetchWeatherOnce() {
-				if (!locationGranted) return
+				if (!locationGranted || !isActive) return
 				let lat, lon
 				try {
 					const p = await new Promise((res, rej) =>
@@ -529,7 +503,7 @@
 					wDay.textContent = cw.is_day ? 'Day' : 'Night'
 					wLast.textContent = new Date().toLocaleTimeString()
 					if (cloudMode && locationGranted) {
-						addDoc(weatherCol, {
+						addDoc(colWeather, {
 							ts: serverTimestamp(),
 							lat,
 							lon,
@@ -562,7 +536,6 @@
 				if (document.hidden && isActive) btnStop.click()
 			}
 			setStatus('Idle')
-			enableControls()
 		</script>
 	</body>
 </html>
