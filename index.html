@@ -2,7 +2,7 @@
 <html lang="en">
 	<head>
 		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="viewport" content="width=device-width,initial-scale=1" />
 		<title>Accelerometer + Weather Logger</title>
 		<style>
 			:root {
@@ -13,7 +13,6 @@
 				--accent: #22d3ee;
 				--ok: #10b981;
 				--warn: #f59e0b;
-				--bad: #ef4444;
 				--card: #0b1225;
 				--border: #1f2937;
 			}
@@ -169,17 +168,37 @@
 				font-size: 12px;
 				color: var(--muted);
 			}
+			.tag {
+				padding: 2px 8px;
+				border-radius: 999px;
+				border: 1px solid #1f2a3a;
+				background: #0b142a;
+				color: #9ca3af;
+				font-size: 11px;
+			}
+			.badge {
+				display: inline-flex;
+				align-items: center;
+				gap: 6px;
+			}
 		</style>
 	</head>
 	<body>
 		<main class="card">
 			<h1>Accelerometer + Weather Logger</h1>
-			<p class="meta">Real-time accelerometer + weather streaming</p>
 
 			<div class="row">
 				<span class="led off" id="led"></span>
 				<span id="status">Idle</span>
-				<button id="btnPerm" class="primary">Grant Motion + Location</button>
+				<button id="btnPermMotion" class="primary">Grant Motion</button>
+				<button id="btnPermLocation" class="primary">Grant Location</button>
+				<span class="badge">
+					<span class="tag" id="tagMotion">Motion: ❌</span>
+					<span class="tag" id="tagLocation">Location: ❌</span>
+				</span>
+			</div>
+
+			<div class="row">
 				<button id="btnStart" disabled>Start</button>
 				<button id="btnStop" disabled class="warn">Stop</button>
 				<button id="btnCloud" disabled>Start Cloud Stream</button>
@@ -257,17 +276,15 @@
 					<div class="label">Last Weather</div>
 					<div class="val" id="wLast">—</div>
 					<div class="chip">
-						<input
-							id="useGPS"
-							type="checkbox"
-							style="accent-color: #22d3ee; margin-right: 6px"
-						/>
-						Use GPS
+						<span class="tag" id="tagWeather">Weather: idle</span>
 					</div>
 				</div>
 			</div>
 
-			<div class="footer">iPhone sensors + weather → Firebase</div>
+			<div class="footer">
+				Streams write only when permission is granted and Cloud Stream is
+				active.
+			</div>
 		</main>
 
 		<script type="module">
@@ -300,11 +317,16 @@
 			const weatherCol = collection(db, 'weatherData')
 
 			const led = document.getElementById('led'),
-				statusEl = document.getElementById('status'),
-				btnPerm = document.getElementById('btnPerm'),
-				btnStart = document.getElementById('btnStart'),
+				statusEl = document.getElementById('status')
+			const btnPermMotion = document.getElementById('btnPermMotion'),
+				btnPermLocation = document.getElementById('btnPermLocation')
+			const btnStart = document.getElementById('btnStart'),
 				btnStop = document.getElementById('btnStop'),
 				btnCloud = document.getElementById('btnCloud')
+			const tagMotion = document.getElementById('tagMotion'),
+				tagLocation = document.getElementById('tagLocation'),
+				tagWeather = document.getElementById('tagWeather')
+
 			const timeVal = document.getElementById('timeVal'),
 				dtVal = document.getElementById('dtVal'),
 				nVal = document.getElementById('nVal'),
@@ -321,12 +343,14 @@
 				wWind = document.getElementById('wWind'),
 				wDir = document.getElementById('wDir'),
 				wDay = document.getElementById('wDay'),
-				wLast = document.getElementById('wLast'),
-				useGPS = document.getElementById('useGPS')
+				wLast = document.getElementById('wLast')
 
-			let isActive = false,
-				cloudMode = false,
-				startT,
+			let authed = false,
+				motionGranted = false,
+				locationGranted = false,
+				isActive = false,
+				cloudMode = false
+			let startT,
 				lastT,
 				n = 0,
 				sumDt = 0,
@@ -334,20 +358,34 @@
 				gy = 0,
 				gz = 0,
 				lastWrite = 0
-			let lat = 53.3498,
-				lon = -6.2603,
-				weatherTimer
+			let weatherTimer = null
 
-			function s(t, on) {
+			function setStatus(t, on = false) {
 				statusEl.textContent = t
 				led.className = 'led ' + (on ? 'on' : 'off')
 			}
-			btnStart.disabled = true
-			btnPerm.disabled = true
-			signInAnonymously(auth)
-			onAuthStateChanged(auth, () => (btnPerm.disabled = false))
+			function setTags() {
+				tagMotion.textContent = 'Motion: ' + (motionGranted ? '✅' : '❌')
+				tagLocation.textContent = 'Location: ' + (locationGranted ? '✅' : '❌')
+			}
+			function enableControls() {
+				btnStart.disabled = !(motionGranted || locationGranted)
+				btnStop.disabled = true
+				btnCloud.disabled = true
+			}
 
-			async function requestAllPermissions() {
+			btnStart.disabled = true
+			btnPermMotion.disabled = true
+			btnPermLocation.disabled = true
+			signInAnonymously(auth)
+			onAuthStateChanged(auth, () => {
+				authed = true
+				btnPermMotion.disabled = false
+				btnPermLocation.disabled = false
+				enableControls()
+			})
+
+			btnPermMotion.onclick = async () => {
 				try {
 					if (
 						typeof DeviceMotionEvent !== 'undefined' &&
@@ -356,66 +394,31 @@
 						const st = await DeviceMotionEvent.requestPermission()
 						if (st !== 'granted') throw 0
 					}
+					motionGranted = true
+					setTags()
+					enableControls()
+					if (isActive)
+						window.addEventListener('devicemotion', onMotion, { passive: true })
+				} catch {}
+			}
+			btnPermLocation.onclick = async () => {
+				try {
 					await new Promise((res, rej) =>
 						navigator.geolocation.getCurrentPosition(
-							(p) => {
-								if (useGPS.checked) {
-									lat = p.coords.latitude
-									lon = p.coords.longitude
-								}
-								res()
-							},
-							() => rej()
+							() => res(),
+							() => rej(),
+							{ enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
 						)
 					)
-					btnPerm.disabled = true
-					btnStart.disabled = false
-					s('Permissions granted')
-					fetchWeather()
-					weatherTimer = setInterval(fetchWeather, 30000)
-				} catch {
-					alert('Permission required')
-				}
+					locationGranted = true
+					setTags()
+					enableControls()
+					if (isActive) startWeather()
+				} catch {}
 			}
 
-			async function fetchWeather() {
-				try {
-					const r = await fetch(
-						`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`
-					)
-					const w = (await r.json()).current_weather
-					if (!w) return
-					const M = {
-						0: ['Clear', '☀️'],
-						1: ['Mainly Clear', '🌤️'],
-						2: ['Partly Cloudy', '⛅'],
-						3: ['Overcast', '☁️'],
-						61: ['Light Rain', '🌧️'],
-						63: ['Rain', '🌧️'],
-						65: ['Heavy Rain', '⛈️'],
-					}
-					const d = M[w.weathercode] || ['Unknown', '🌡️']
-					wTemp.textContent = w.temperature
-					wIcon.textContent = d[1]
-					wDesc.textContent = d[0]
-					wWind.textContent = w.windspeed
-					wDir.textContent = w.winddirection
-					wDay.textContent = w.is_day ? 'Day' : 'Night'
-					wLast.textContent = new Date().toLocaleTimeString()
-					await addDoc(weatherCol, {
-						ts: serverTimestamp(),
-						lat,
-						lon,
-						temperature: w.temperature,
-						wind: w.windspeed,
-						dir: w.winddirection,
-						code: w.weathercode,
-						is_day: w.is_day,
-					})
-				} catch (e) {}
-			}
-
-			function start() {
+			btnStart.onclick = () => {
+				if (isActive) return
 				isActive = true
 				startT = performance.now()
 				lastT = startT
@@ -424,24 +427,31 @@
 				gx = gy = gz = 0
 				btnStart.disabled = true
 				btnStop.disabled = false
-				btnCloud.disabled = false
-				s('Recording', true)
-				window.addEventListener('devicemotion', onMotion, { passive: true })
+				btnCloud.disabled = true
+				setStatus('Recording', true)
+				if (motionGranted)
+					window.addEventListener('devicemotion', onMotion, { passive: true })
+				if (locationGranted) startWeather()
 			}
-
-			function stop() {
+			btnStop.onclick = () => {
+				if (!isActive) return
 				isActive = false
 				window.removeEventListener('devicemotion', onMotion, { passive: true })
+				stopWeather()
 				btnStart.disabled = false
 				btnStop.disabled = true
 				btnCloud.disabled = true
 				cloudMode = false
 				btnCloud.textContent = 'Start Cloud Stream'
-				s('Stopped')
+				setStatus('Stopped')
+			}
+			btnCloud.onclick = () => {
+				cloudMode = !cloudMode
+				btnCloud.textContent = cloudMode ? 'Streaming…' : 'Start Cloud Stream'
 			}
 
 			function onMotion(e) {
-				if (!isActive) return
+				if (!isActive || !motionGranted) return
 				const t = performance.now(),
 					dt = (t - lastT) / 1000
 				lastT = t
@@ -471,7 +481,7 @@
 				const bx = Math.max(-100, Math.min(100, lx * 3)),
 					by = Math.max(-60, Math.min(60, ly * 3))
 				ball.style.transform = `translate(calc(-50% + ${bx}px), calc(-50% + ${by}px))`
-				if (cloudMode) {
+				if (cloudMode && motionGranted) {
 					const now = performance.now()
 					if (now - lastWrite >= 100) {
 						lastWrite = now
@@ -486,24 +496,89 @@
 							lz,
 							amag,
 							amagHPF,
-						})
+						}).catch(() => {})
 					}
 				}
 			}
 
-			btnPerm.onclick = requestAllPermissions
-			btnStart.onclick = start
-			btnStop.onclick = stop
-			btnCloud.onclick = () => {
-				cloudMode = !cloudMode
-				btnCloud.textContent = cloudMode ? 'Streaming…' : 'Start Cloud Stream'
+			async function fetchWeatherOnce() {
+				if (!locationGranted) return
+				let lat, lon
+				try {
+					const p = await new Promise((res, rej) =>
+						navigator.geolocation.getCurrentPosition(res, rej, {
+							enableHighAccuracy: true,
+							timeout: 8000,
+							maximumAge: 0,
+						})
+					)
+					lat = p.coords.latitude
+					lon = p.coords.longitude
+				} catch {
+					return
+				}
+				try {
+					const r = await fetch(
+						`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`
+					)
+					const cw = (await r.json()).current_weather
+					if (!cw) return
+					const M = {
+						0: ['Clear', '☀️'],
+						1: ['Mainly Clear', '🌤️'],
+						2: ['Partly Cloudy', '⛅'],
+						3: ['Overcast', '☁️'],
+						61: ['Light Rain', '🌧️'],
+						63: ['Rain', '🌧️'],
+						65: ['Heavy Rain', '⛈️'],
+					}
+					const d = M[cw.weathercode] || ['Unknown', '🌡️']
+					wTemp.textContent = cw.temperature
+					wIcon.textContent = d[1]
+					wDesc.textContent = d[0]
+					wWind.textContent = cw.windspeed
+					wDir.textContent = cw.winddirection
+					wDay.textContent = cw.is_day ? 'Day' : 'Night'
+					wLast.textContent = new Date().toLocaleTimeString()
+					tagWeather.textContent = 'Weather: active'
+					if (cloudMode && locationGranted) {
+						addDoc(weatherCol, {
+							ts: serverTimestamp(),
+							lat,
+							lon,
+							temperature: cw.temperature,
+							wind: cw.windspeed,
+							dir: cw.winddirection,
+							code: cw.weathercode,
+							is_day: cw.is_day,
+						}).catch(() => {})
+					}
+				} catch {}
 			}
+
+			function startWeather() {
+				stopWeather()
+				tagWeather.textContent = 'Weather: polling'
+				weatherTimer = setInterval(fetchWeatherOnce, 30000)
+				fetchWeatherOnce()
+			}
+			function stopWeather() {
+				if (weatherTimer) {
+					clearInterval(weatherTimer)
+					weatherTimer = null
+					tagWeather.textContent = 'Weather: idle'
+				}
+			}
+
 			window.onbeforeunload = () => {
-				if (isActive) stop()
+				if (isActive) btnStop.click()
 			}
 			document.onvisibilitychange = () => {
-				if (document.hidden && isActive) stop()
+				if (document.hidden && isActive) btnStop.click()
 			}
+			setStatus('Idle')
+			setTags()
+			enableControls()
 		</script>
 	</body>
 </html>
