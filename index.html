@@ -51,11 +51,11 @@
 			}
 			.row {
 				display: flex;
-				flex-wrap: wrap;
 				justify-content: center;
 				align-items: center;
-				gap: 10px;
+				gap: 12px;
 				margin-bottom: 14px;
+				width: 100%;
 			}
 			button {
 				all: unset;
@@ -190,12 +190,17 @@
 			<div class="row">
 				<span class="led off" id="led"></span>
 				<span id="status">Idle</span>
+			</div>
+
+			<div class="row">
 				<button id="btnPermMotion" class="primary">Grant Motion</button>
 				<button id="btnPermLocation" class="primary">Grant Location</button>
-				<span class="badge">
-					<span class="tag" id="tagMotion">Motion: ❌</span>
-					<span class="tag" id="tagLocation">Location: ❌</span>
-				</span>
+			</div>
+
+			<div class="row">
+				<button id="btnStart" disabled>Start</button>
+				<button id="btnStop" disabled class="warn">Stop</button>
+				<button id="btnCloud" disabled>Start Cloud Stream</button>
 			</div>
 
 			<div class="row">
@@ -275,9 +280,6 @@
 				<div class="tile">
 					<div class="label">Last Weather</div>
 					<div class="val" id="wLast">—</div>
-					<div class="chip">
-						<span class="tag" id="tagWeather">Weather: idle</span>
-					</div>
 				</div>
 			</div>
 
@@ -323,9 +325,6 @@
 			const btnStart = document.getElementById('btnStart'),
 				btnStop = document.getElementById('btnStop'),
 				btnCloud = document.getElementById('btnCloud')
-			const tagMotion = document.getElementById('tagMotion'),
-				tagLocation = document.getElementById('tagLocation'),
-				tagWeather = document.getElementById('tagWeather')
 
 			const timeVal = document.getElementById('timeVal'),
 				dtVal = document.getElementById('dtVal'),
@@ -364,10 +363,7 @@
 				statusEl.textContent = t
 				led.className = 'led ' + (on ? 'on' : 'off')
 			}
-			function setTags() {
-				tagMotion.textContent = 'Motion: ' + (motionGranted ? '✅' : '❌')
-				tagLocation.textContent = 'Location: ' + (locationGranted ? '✅' : '❌')
-			}
+
 			function enableControls() {
 				btnStart.disabled = !(motionGranted || locationGranted)
 				btnStop.disabled = true
@@ -395,7 +391,6 @@
 						if (st !== 'granted') throw 0
 					}
 					motionGranted = true
-					setTags()
 					enableControls()
 					if (isActive)
 						window.addEventListener('devicemotion', onMotion, { passive: true })
@@ -411,7 +406,6 @@
 						)
 					)
 					locationGranted = true
-					setTags()
 					enableControls()
 					if (isActive) startWeather()
 				} catch {}
@@ -540,7 +534,6 @@
 					wDir.textContent = cw.winddirection
 					wDay.textContent = cw.is_day ? 'Day' : 'Night'
 					wLast.textContent = new Date().toLocaleTimeString()
-					tagWeather.textContent = 'Weather: active'
 					if (cloudMode && locationGranted) {
 						addDoc(weatherCol, {
 							ts: serverTimestamp(),
@@ -558,7 +551,6 @@
 
 			function startWeather() {
 				stopWeather()
-				tagWeather.textContent = 'Weather: polling'
 				weatherTimer = setInterval(fetchWeatherOnce, 30000)
 				fetchWeatherOnce()
 			}
@@ -566,7 +558,6 @@
 				if (weatherTimer) {
 					clearInterval(weatherTimer)
 					weatherTimer = null
-					tagWeather.textContent = 'Weather: idle'
 				}
 			}
 
@@ -577,7 +568,6 @@
 				if (document.hidden && isActive) btnStop.click()
 			}
 			setStatus('Idle')
-			setTags()
 			enableControls()
 		</script>
 	</body>
