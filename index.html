@@ -188,7 +188,7 @@
 			<div class="row" aria-live="polite">
 				<span class="led off" id="led"></span>
 				<span id="status">Idle</span>
-				<button id="btnPerm" class="primary">Grant Motion Permission</button>
+				<button id="btnPerm" class="primary">Grant Motion + Location</button>
 				<button id="btnStart" disabled>Start</button>
 				<button id="btnStop" disabled class="warn">Stop</button>
 				<button id="btnCloud" disabled>Start Cloud Stream</button>
@@ -267,14 +267,6 @@
 				<div class="tile">
 					<div class="label">Last Weather Update</div>
 					<div class="val" id="wLast">—</div>
-					<div class="chip">
-						<input
-							id="useGPS"
-							type="checkbox"
-							style="accent-color: #22d3ee; margin-right: 6px"
-						/>
-						Use my GPS for weather
-					</div>
 				</div>
 			</div>
 
@@ -399,21 +391,36 @@
 				}
 			})
 
-			async function requestPermission() {
+			async function requestAllPermissions() {
 				try {
 					if (
 						typeof DeviceMotionEvent !== 'undefined' &&
 						typeof DeviceMotionEvent.requestPermission === 'function'
 					) {
 						const st = await DeviceMotionEvent.requestPermission()
-						if (st !== 'granted') throw new Error('Permission not granted')
+						if (st !== 'granted') throw new Error('Motion permission denied')
 					}
-					btnStart.disabled = false
+
+					await new Promise((resolve, reject) => {
+						navigator.geolocation.getCurrentPosition(
+							(pos) => {
+								if (useGPS) {
+									lat = pos.coords.latitude
+									lon = pos.coords.longitude
+								}
+								resolve()
+							},
+							(err) => reject(new Error('Location permission denied')),
+							{ enableHighAccuracy: true, timeout: 8000 }
+						)
+					})
+
 					btnPerm.disabled = true
-					setStatus('Ready', false)
+					btnStart.disabled = false
+					setStatus('Permissions granted', false)
 				} catch (e) {
-					setStatus('Permission denied', false)
-					alert('Motion permission not granted.')
+					setStatus('Permission denied')
+					alert(e.message)
 				}
 			}
 
@@ -632,7 +639,7 @@
 				}
 			}
 
-			btnPerm.addEventListener('click', requestPermission)
+			btnPerm.addEventListener('click', requestAllPermissions)
 			btnStart.addEventListener('click', start)
 			btnStop.addEventListener('click', stop)
 			btnExport.addEventListener('click', exportCSV)
