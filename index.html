@@ -65,7 +65,7 @@
 				padding: 10px 16px;
 				border-radius: 10px;
 				text-align: center;
-				min-width: 130px;
+				min-width: 160px;
 				background: #1f2937;
 				border: 1px solid #293241;
 			}
@@ -152,12 +152,6 @@
 				font-size: 12px;
 				text-align: center;
 			}
-			code {
-				background: #0b142a;
-				border: 1px solid var(--border);
-				padding: 2px 6px;
-				border-radius: 6px;
-			}
 			.weatherWrap {
 				display: grid;
 				grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -178,24 +172,20 @@
 		</style>
 	</head>
 	<body>
-		<main class="card" role="main" aria-labelledby="title">
-			<h1 id="title">Accelerometer + Weather Logger</h1>
-			<p class="meta">
-				Streams iPhone accelerometer and real-time weather to Firebase
-				Firestore.
-			</p>
+		<main class="card">
+			<h1>Accelerometer + Weather Logger</h1>
+			<p class="meta">Real-time accelerometer + weather streaming</p>
 
-			<div class="row" aria-live="polite">
+			<div class="row">
 				<span class="led off" id="led"></span>
 				<span id="status">Idle</span>
 				<button id="btnPerm" class="primary">Grant Motion + Location</button>
 				<button id="btnStart" disabled>Start</button>
 				<button id="btnStop" disabled class="warn">Stop</button>
 				<button id="btnCloud" disabled>Start Cloud Stream</button>
-				<button id="btnExport" disabled>Export CSV</button>
 			</div>
 
-			<div class="grid" style="margin-top: 10px">
+			<div class="grid">
 				<div class="tile">
 					<div class="label">Time (s)</div>
 					<div class="val" id="timeVal">0.000</div>
@@ -211,39 +201,38 @@
 			</div>
 			<div class="grid">
 				<div class="tile">
-					<div class="label">ax (m/s²)</div>
+					<div class="label">ax</div>
 					<div class="val" id="axVal">0.00</div>
 				</div>
 				<div class="tile">
-					<div class="label">ay (m/s²)</div>
+					<div class="label">ay</div>
 					<div class="val" id="ayVal">0.00</div>
 				</div>
 				<div class="tile">
-					<div class="label">az (m/s²)</div>
+					<div class="label">az</div>
 					<div class="val" id="azVal">0.00</div>
 				</div>
 			</div>
 			<div class="grid">
 				<div class="tile">
-					<div class="label">|a| (m/s²)</div>
+					<div class="label">|a|</div>
 					<div class="val" id="amagVal">0.00</div>
 				</div>
 				<div class="tile">
-					<div class="label">HPF |a| (m/s²)</div>
+					<div class="label">HPF |a|</div>
 					<div class="val" id="amagHPFVal">0.00</div>
 				</div>
 				<div class="tile">
-					<div class="label">Mean Hz</div>
+					<div class="label">Hz</div>
 					<div class="val" id="hzVal">—</div>
 				</div>
 			</div>
-			<div class="ballWrap" aria-label="Motion visualization">
-				<div id="ball" class="ball"></div>
-			</div>
+
+			<div class="ballWrap"><div id="ball" class="ball"></div></div>
 
 			<div class="weatherWrap">
 				<div class="tile">
-					<div class="label">Weather (Dublin default)</div>
+					<div class="label">Temp</div>
 					<div class="val">
 						<span id="wTemp">--</span>
 						°C
@@ -258,31 +247,27 @@
 						km/h
 					</div>
 					<div class="label">
-						Dir:
+						Dir
 						<span id="wDir">--</span>
 						° |
 						<span id="wDay">Day/Night</span>
 					</div>
 				</div>
 				<div class="tile">
-					<div class="label">Last Weather Update</div>
+					<div class="label">Last Weather</div>
 					<div class="val" id="wLast">—</div>
+					<div class="chip">
+						<input
+							id="useGPS"
+							type="checkbox"
+							style="accent-color: #22d3ee; margin-right: 6px"
+						/>
+						Use GPS
+					</div>
 				</div>
 			</div>
 
-			<div class="footer">
-				<div>
-					Tip: keep the phone steady for 3–5 s first; this improves gravity
-					estimation.
-				</div>
-				<div>
-					<code>DeviceMotionEvent</code>
-					+
-					<code>Open-Meteo</code>
-					→ Firebase Firestore
-				</div>
-			</div>
-			<div class="sr" id="ariaLog" aria-live="polite"></div>
+			<div class="footer">iPhone sensors + weather → Firebase</div>
 		</main>
 
 		<script type="module">
@@ -314,82 +299,53 @@
 			const accelCol = collection(db, 'accelerometerData')
 			const weatherCol = collection(db, 'weatherData')
 
-			const led = document.getElementById('led')
-			const statusEl = document.getElementById('status')
-			const btnPerm = document.getElementById('btnPerm')
-			const btnStart = document.getElementById('btnStart')
-			const btnStop = document.getElementById('btnStop')
-			const btnCloud = document.getElementById('btnCloud')
-			const btnExport = document.getElementById('btnExport')
-			const timeVal = document.getElementById('timeVal')
-			const dtVal = document.getElementById('dtVal')
-			const nVal = document.getElementById('nVal')
-			const hzVal = document.getElementById('hzVal')
-			const axVal = document.getElementById('axVal')
-			const ayVal = document.getElementById('ayVal')
-			const azVal = document.getElementById('azVal')
-			const amagVal = document.getElementById('amagVal')
-			const amagHPFVal = document.getElementById('amagHPFVal')
-			const ariaLog = document.getElementById('ariaLog')
-			const ball = document.getElementById('ball')
-
-			const wTemp = document.getElementById('wTemp')
-			const wIcon = document.getElementById('wIcon')
-			const wDesc = document.getElementById('wDesc')
-			const wWind = document.getElementById('wWind')
-			const wDir = document.getElementById('wDir')
-			const wDay = document.getElementById('wDay')
-			const wLast = document.getElementById('wLast')
-			const useGPS = document.getElementById('useGPS')
+			const led = document.getElementById('led'),
+				statusEl = document.getElementById('status'),
+				btnPerm = document.getElementById('btnPerm'),
+				btnStart = document.getElementById('btnStart'),
+				btnStop = document.getElementById('btnStop'),
+				btnCloud = document.getElementById('btnCloud')
+			const timeVal = document.getElementById('timeVal'),
+				dtVal = document.getElementById('dtVal'),
+				nVal = document.getElementById('nVal'),
+				hzVal = document.getElementById('hzVal'),
+				axVal = document.getElementById('axVal'),
+				ayVal = document.getElementById('ayVal'),
+				azVal = document.getElementById('azVal'),
+				amagVal = document.getElementById('amagVal'),
+				amagHPFVal = document.getElementById('amagHPFVal'),
+				ball = document.getElementById('ball')
+			const wTemp = document.getElementById('wTemp'),
+				wIcon = document.getElementById('wIcon'),
+				wDesc = document.getElementById('wDesc'),
+				wWind = document.getElementById('wWind'),
+				wDir = document.getElementById('wDir'),
+				wDay = document.getElementById('wDay'),
+				wLast = document.getElementById('wLast'),
+				useGPS = document.getElementById('useGPS')
 
 			let isActive = false,
-				cloudMode = false
-			let startT = null,
-				lastT = null,
+				cloudMode = false,
+				startT,
+				lastT,
 				n = 0,
-				sumDt = 0
-			let gxG = 0,
-				gyG = 0,
-				gzG = 0
-			const ALPHA = 0.92
-			const rec = []
-			const RATE_HZ = 10
-			let lastWrite = 0
-
-			let weatherTimer = null
+				sumDt = 0,
+				gx = 0,
+				gy = 0,
+				gz = 0,
+				lastWrite = 0
 			let lat = 53.3498,
-				lon = -6.2603
-			let currentWeather = null
+				lon = -6.2603,
+				weatherTimer
 
-			function setStatus(txt, on = false) {
-				statusEl.textContent = txt
+			function s(t, on) {
+				statusEl.textContent = t
 				led.className = 'led ' + (on ? 'on' : 'off')
-				ariaLog.textContent = txt
 			}
-			function nowISO() {
-				return new Date().toISOString()
-			}
-			function weatherInfo(code) {
-				const M = {
-					0: ['Clear', '☀️'],
-					1: ['Mainly Clear', '🌤️'],
-					2: ['Partly Cloudy', '⛅'],
-					3: ['Overcast', '☁️'],
-					61: ['Light Rain', '🌧️'],
-					63: ['Rain', '🌧️'],
-					65: ['Heavy Rain', '⛈️'],
-				}
-				return M[code] || ['Unknown', '🌡️']
-			}
-
 			btnStart.disabled = true
 			btnPerm.disabled = true
-			signInAnonymously(auth).catch(console.error)
-			onAuthStateChanged(auth, (user) => {
-				if (user) {
-					btnPerm.disabled = false
-				}
-			})
+			signInAnonymously(auth)
+			onAuthStateChanged(auth, () => (btnPerm.disabled = false))
 
 			async function requestAllPermissions() {
 				try {
@@ -398,91 +354,111 @@
 						typeof DeviceMotionEvent.requestPermission === 'function'
 					) {
 						const st = await DeviceMotionEvent.requestPermission()
-						if (st !== 'granted') throw new Error('Motion permission denied')
+						if (st !== 'granted') throw 0
 					}
-
-					await new Promise((resolve, reject) => {
+					await new Promise((res, rej) =>
 						navigator.geolocation.getCurrentPosition(
-							(pos) => {
-								if (useGPS) {
-									lat = pos.coords.latitude
-									lon = pos.coords.longitude
+							(p) => {
+								if (useGPS.checked) {
+									lat = p.coords.latitude
+									lon = p.coords.longitude
 								}
-								resolve()
+								res()
 							},
-							(err) => reject(new Error('Location permission denied')),
-							{ enableHighAccuracy: true, timeout: 8000 }
+							() => rej()
 						)
-					})
-
+					)
 					btnPerm.disabled = true
 					btnStart.disabled = false
-					setStatus('Permissions granted', false)
-				} catch (e) {
-					setStatus('Permission denied')
-					alert(e.message)
+					s('Permissions granted')
+					fetchWeather()
+					weatherTimer = setInterval(fetchWeather, 30000)
+				} catch {
+					alert('Permission required')
 				}
 			}
 
+			async function fetchWeather() {
+				try {
+					const r = await fetch(
+						`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`
+					)
+					const w = (await r.json()).current_weather
+					if (!w) return
+					const M = {
+						0: ['Clear', '☀️'],
+						1: ['Mainly Clear', '🌤️'],
+						2: ['Partly Cloudy', '⛅'],
+						3: ['Overcast', '☁️'],
+						61: ['Light Rain', '🌧️'],
+						63: ['Rain', '🌧️'],
+						65: ['Heavy Rain', '⛈️'],
+					}
+					const d = M[w.weathercode] || ['Unknown', '🌡️']
+					wTemp.textContent = w.temperature
+					wIcon.textContent = d[1]
+					wDesc.textContent = d[0]
+					wWind.textContent = w.windspeed
+					wDir.textContent = w.winddirection
+					wDay.textContent = w.is_day ? 'Day' : 'Night'
+					wLast.textContent = new Date().toLocaleTimeString()
+					await addDoc(weatherCol, {
+						ts: serverTimestamp(),
+						lat,
+						lon,
+						temperature: w.temperature,
+						wind: w.windspeed,
+						dir: w.winddirection,
+						code: w.weathercode,
+						is_day: w.is_day,
+					})
+				} catch (e) {}
+			}
+
 			function start() {
-				if (isActive) return
 				isActive = true
 				startT = performance.now()
 				lastT = startT
 				n = 0
 				sumDt = 0
-				gxG = gyG = gzG = 0
-				rec.length = 0
+				gx = gy = gz = 0
 				btnStart.disabled = true
 				btnStop.disabled = false
-				btnExport.disabled = true
 				btnCloud.disabled = false
-				setStatus('Recording…', true)
+				s('Recording', true)
 				window.addEventListener('devicemotion', onMotion, { passive: true })
-
-				startWeather()
 			}
 
 			function stop() {
-				if (!isActive) return
 				isActive = false
 				window.removeEventListener('devicemotion', onMotion, { passive: true })
 				btnStart.disabled = false
 				btnStop.disabled = true
-				btnExport.disabled = rec.length === 0
+				btnCloud.disabled = true
 				cloudMode = false
 				btnCloud.textContent = 'Start Cloud Stream'
-				btnCloud.disabled = true
-				setStatus('Stopped', false)
-
-				stopWeather()
+				s('Stopped')
 			}
 
 			function onMotion(e) {
 				if (!isActive) return
-				const t = performance.now()
-				const dt = (t - lastT) / 1000
+				const t = performance.now(),
+					dt = (t - lastT) / 1000
 				lastT = t
-
-				const a = e.acceleration
-				const ag = e.accelerationIncludingGravity || {}
-				let ax = a && a.x != null ? a.x : ag.x || 0
-				let ay = a && a.y != null ? a.y : ag.y || 0
-				let az = a && a.z != null ? a.z : ag.z || 0
-
-				gxG = ALPHA * gxG + (1 - ALPHA) * ax
-				gyG = ALPHA * gyG + (1 - ALPHA) * ay
-				gzG = ALPHA * gzG + (1 - ALPHA) * az
-				const lx = ax - gxG,
-					ly = ay - gyG,
-					lz = az - gzG
-
-				const amag = Math.hypot(ax, ay, az)
-				const amagHPF = Math.hypot(lx, ly, lz)
-
+				const a = e.acceleration || e.accelerationIncludingGravity || {},
+					ax = a.x || 0,
+					ay = a.y || 0,
+					az = a.z || 0
+				gx = 0.92 * gx + 0.08 * ax
+				gy = 0.92 * gy + 0.08 * ay
+				gz = 0.92 * gz + 0.08 * az
+				const lx = ax - gx,
+					ly = ay - gy,
+					lz = az - gz
+				const amag = Math.hypot(ax, ay, az),
+					amagHPF = Math.hypot(lx, ly, lz)
 				if (n > 0) sumDt += dt
 				n++
-
 				timeVal.textContent = ((t - startT) / 1000).toFixed(3)
 				dtVal.textContent = (dt * 1000).toFixed(1)
 				nVal.textContent = n
@@ -492,33 +468,16 @@
 				azVal.textContent = az.toFixed(2)
 				amagVal.textContent = amag.toFixed(2)
 				amagHPFVal.textContent = amagHPF.toFixed(2)
-
-				const k = 3
-				const bx = Math.max(-100, Math.min(100, lx * k))
-				const by = Math.max(-60, Math.min(60, ly * k))
+				const bx = Math.max(-100, Math.min(100, lx * 3)),
+					by = Math.max(-60, Math.min(60, ly * 3))
 				ball.style.transform = `translate(calc(-50% + ${bx}px), calc(-50% + ${by}px))`
-
-				rec.push({
-					timestamp_ms: t,
-					time_s: (t - startT) / 1000,
-					interval_s: typeof e.interval === 'number' ? e.interval / 1000 : dt,
-					ax_m_s2: ax,
-					ay_m_s2: ay,
-					az_m_s2: az,
-					lax_m_s2: lx,
-					lay_m_s2: ly,
-					laz_m_s2: lz,
-					amag_m_s2: amag,
-					amag_hpf_m_s2: amagHPF,
-				})
-
 				if (cloudMode) {
 					const now = performance.now()
-					if (now - lastWrite >= 1000 / RATE_HZ) {
+					if (now - lastWrite >= 100) {
 						lastWrite = now
 						addDoc(accelCol, {
 							ts: serverTimestamp(),
-							time_s: (t - startT) / 1000,
+							time: (t - startT) / 1000,
 							ax,
 							ay,
 							az,
@@ -527,135 +486,24 @@
 							lz,
 							amag,
 							amagHPF,
-							device: 'iPhone 15',
-						}).catch(console.error)
+						})
 					}
 				}
 			}
 
-			function exportCSV() {
-				if (rec.length === 0) return
-				const meanDt = sumDt / Math.max(1, n - 1)
-				const meta = [
-					'# Accelerometer Log',
-					'# device=iPhone 15',
-					'# api=DeviceMotionEvent',
-					`# samples=${rec.length}`,
-					`# mean_dt_s=${meanDt.toFixed(6)}`,
-					`# inferred_hz=${(1 / meanDt).toFixed(3)}`,
-					'# columns=time_s,interval_s,ax_m_s2,ay_m_s2,az_m_s2,lax_m_s2,lay_m_s2,laz_m_s2,amag_m_s2,amag_hpf_m_s2',
-				].join('\n')
-				const header =
-					'time_s,interval_s,ax_m_s2,ay_m_s2,az_m_s2,lax_m_s2,lay_m_s2,laz_m_s2,amag_m_s2,amag_hpf_m_s2'
-				const lines = rec.map((r) =>
-					[
-						r.time_s,
-						r.interval_s,
-						r.ax_m_s2,
-						r.ay_m_s2,
-						r.az_m_s2,
-						r.lax_m_s2,
-						r.lay_m_s2,
-						r.laz_m_s2,
-						r.amag_m_s2,
-						r.amag_hpf_m_s2,
-					]
-						.map((v) => (Number.isFinite(v) ? v : ''))
-						.join(',')
-				)
-				const csv = meta + '\n' + header + '\n' + lines.join('\n')
-				const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
-				const url = URL.createObjectURL(blob)
-				const a = document.createElement('a')
-				a.href = url
-				a.download = `accelerometer_${nowISO().replace(/[:.]/g, '-')}.csv`
-				document.body.appendChild(a)
-				a.click()
-				setTimeout(() => {
-					URL.revokeObjectURL(url)
-					a.remove()
-				}, 0)
-			}
-
-			async function fetchWeather() {
-				try {
-					const res = await fetch(
-						`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`
-					)
-					const data = await res.json()
-					const cw = data?.current_weather
-					if (!cw) return
-
-					currentWeather = cw
-					const [desc, icon] = weatherInfo(cw.weathercode)
-					wTemp.textContent =
-						cw.temperature?.toFixed?.(1) ?? cw.temperature ?? '--'
-					wIcon.textContent = icon
-					wDesc.textContent = desc
-					wWind.textContent = cw.windspeed ?? '--'
-					wDir.textContent = cw.winddirection ?? '--'
-					wDay.textContent = cw.is_day ? 'Day' : 'Night'
-					wLast.textContent = new Date().toLocaleTimeString()
-
-					await addDoc(weatherCol, {
-						ts: serverTimestamp(),
-						lat,
-						lon,
-						temperature_c: cw.temperature,
-						windspeed_kmh: cw.windspeed,
-						wind_dir_deg: cw.winddirection,
-						weathercode: cw.weathercode,
-						is_day: !!cw.is_day,
-						source: 'open-meteo',
-					})
-				} catch (e) {
-					console.error('Weather fetch/store error:', e)
-				}
-			}
-
-			function startWeather() {
-				if (useGPS.checked && navigator.geolocation) {
-					navigator.geolocation.getCurrentPosition(
-						(pos) => {
-							lat = pos.coords.latitude
-							lon = pos.coords.longitude
-							fetchWeather()
-						},
-						(err) => {
-							console.warn('GPS for weather failed:', err?.message)
-							fetchWeather()
-						},
-						{ enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
-					)
-				} else {
-					fetchWeather()
-				}
-				weatherTimer = setInterval(fetchWeather, 30000)
-			}
-			function stopWeather() {
-				if (weatherTimer) {
-					clearInterval(weatherTimer)
-					weatherTimer = null
-				}
-			}
-
-			btnPerm.addEventListener('click', requestAllPermissions)
-			btnStart.addEventListener('click', start)
-			btnStop.addEventListener('click', stop)
-			btnExport.addEventListener('click', exportCSV)
-			btnCloud.addEventListener('click', () => {
+			btnPerm.onclick = requestAllPermissions
+			btnStart.onclick = start
+			btnStop.onclick = stop
+			btnCloud.onclick = () => {
 				cloudMode = !cloudMode
-				btnCloud.textContent = cloudMode
-					? 'Streaming to Cloud…'
-					: 'Start Cloud Stream'
-			})
-
-			window.addEventListener('beforeunload', () => {
+				btnCloud.textContent = cloudMode ? 'Streaming…' : 'Start Cloud Stream'
+			}
+			window.onbeforeunload = () => {
 				if (isActive) stop()
-			})
-			document.addEventListener('visibilitychange', () => {
+			}
+			document.onvisibilitychange = () => {
 				if (document.hidden && isActive) stop()
-			})
+			}
 		</script>
 	</body>
 </html>
