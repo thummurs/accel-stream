@@ -244,6 +244,7 @@
 				getFirestore,
 				collection,
 				addDoc,
+				serverTimestamp,
 			} from 'https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js'
 			import {
 				getAuth,
@@ -427,7 +428,7 @@
 					if (now - lastWrite >= 1000 / RATE_HZ) {
 						lastWrite = now
 						addDoc(accelCol, {
-							ts: Date.now(),
+							ts: serverTimestamp(),
 							time_s: (t - startT) / 1000,
 							ax,
 							ay,
