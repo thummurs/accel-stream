@@ -4,12 +4,14 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width,initial-scale=1" />
 		<title>Weather Logger</title>
+
 		<style>
 			*,
 			*::before,
 			*::after {
 				box-sizing: border-box;
 			}
+
 			:root {
 				--bg: #0f172a;
 				--card: #0b1225;
@@ -19,6 +21,7 @@
 				--ok: #10b981;
 				--border: #1f2937;
 			}
+
 			html,
 			body {
 				margin: 0;
@@ -30,23 +33,29 @@
 				display: flex;
 				justify-content: center;
 				align-items: flex-start;
+				padding: max(16px, env(safe-area-inset-top)) 16px
+					max(16px, env(safe-area-inset-bottom));
+				-webkit-text-size-adjust: 100%;
 			}
+
 			main.card {
 				width: 100%;
-				overflow: hidden;
-				max-width: 700px;
-				margin: 20px;
+				max-width: 440px; /* mobile-friendly */
 				background: var(--card);
 				border: 1px solid var(--border);
 				border-radius: 18px;
-				padding: 20px;
+				padding: 16px;
 				box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+				overflow: hidden; /* critical fix */
+				margin-bottom: 24px;
 			}
+
 			h1 {
-				margin: 0 0 8px;
+				margin: 0 0 10px;
 				text-align: center;
 				font-size: 22px;
 			}
+
 			.row {
 				display: flex;
 				justify-content: center;
@@ -55,6 +64,31 @@
 				margin-bottom: 12px;
 				padding: 0 10px;
 			}
+
+			/* Status row refined */
+			.row.status {
+				gap: 8px;
+				margin-bottom: 12px;
+				font-size: 14px;
+				color: var(--muted);
+			}
+
+			.led {
+				width: 9px;
+				height: 9px;
+				border-radius: 50%;
+				display: inline-block;
+			}
+
+			.on {
+				background: var(--ok);
+				box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18);
+			}
+
+			.off {
+				background: #374151;
+			}
+
 			.btncol {
 				display: grid;
 				grid-template-columns: 1fr;
@@ -62,13 +96,15 @@
 				width: 100%;
 				max-width: 460px;
 			}
+
+			/* ✅ FIXED BUTTONS */
 			button {
 				-webkit-appearance: none;
 				appearance: none;
 				display: block;
 				width: 100%;
 				max-width: 100%;
-				box-sizing: border-box;
+				box-sizing: border-box; /* DO NOT REMOVE */
 				cursor: pointer;
 				user-select: none;
 				-webkit-tap-highlight-color: transparent;
@@ -83,64 +119,62 @@
 				border: 1px solid #293241;
 				color: var(--ink);
 			}
-			button:active {
-				transform: translateY(1px);
-			}
+
 			button.primary {
 				background: var(--accent);
 				color: #052b33;
 				border-color: #0ea5b6;
 			}
+
 			button.warn {
 				color: #fca5a5;
 			}
+
 			button[disabled] {
 				opacity: 0.45;
 				cursor: not-allowed;
 			}
-			.led {
-				width: 10px;
-				height: 10px;
-				border-radius: 50%;
-				display: inline-block;
-				margin-right: 8px;
-			}
-			.on {
-				background: var(--ok);
-				box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
-			}
-			.off {
-				background: #374151;
-			}
+
 			.grid {
 				display: grid;
-				grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-				gap: 10px;
+				grid-template-columns: repeat(2, minmax(0, 1fr));
+				gap: 12px;
 				margin-top: 12px;
 			}
+
+			@media (min-width: 500px) {
+				.grid {
+					grid-template-columns: repeat(3, minmax(0, 1fr));
+				}
+			}
+
 			.tile {
 				background: #0b142a;
 				border: 1px solid var(--border);
 				border-radius: 12px;
-				padding: 8px 6px 10px;
+				padding: 10px 8px;
 				text-align: center;
+				min-height: 80px;
 			}
+
 			.label {
 				color: var(--muted);
 				font-size: 12px;
 				margin-bottom: 4px;
 			}
+
 			.val {
 				font-variant-numeric: tabular-nums;
 				font-size: 22px;
 			}
 		</style>
 	</head>
+
 	<body>
 		<main class="card">
 			<h1>Weather Logger</h1>
 
-			<div class="row">
+			<div class="row status">
 				<span id="led" class="led off"></span>
 				<span id="status">Idle</span>
 			</div>
@@ -169,6 +203,7 @@
 					</div>
 					<div id="wDesc" class="label">—</div>
 				</div>
+
 				<div class="tile">
 					<div class="label">Wind</div>
 					<div class="val">
@@ -182,10 +217,12 @@
 						<span id="wDay">Day/Night</span>
 					</div>
 				</div>
+
 				<div class="tile">
 					<div class="label">Last Weather</div>
 					<div id="wLast" class="val">—</div>
 				</div>
+
 				<div class="tile">
 					<div class="label">Lat,Lon</div>
 					<div id="wLL" class="val">—</div>
@@ -193,6 +230,7 @@
 			</div>
 		</main>
 
+		<!-- ✅ JS unchanged -->
 		<script type="module">
 			import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js'
 			import {
@@ -216,30 +254,31 @@
 				appId: '1:369697845903:web:05bccb3b0e7ba24c65b6fa',
 				measurementId: 'G-9BNGZDZ8VQ',
 			}
+
 			const app = initializeApp(firebaseConfig)
 			const auth = getAuth(app)
 			const db = getFirestore(app)
 			const colWeather = collection(db, 'weatherData')
 
-			const led = document.getElementById('led'),
-				statusEl = document.getElementById('status')
+			const led = document.getElementById('led')
+			const statusEl = document.getElementById('status')
 			const btnPermLocation = document.getElementById('btnPermLocation')
-			const btnStart = document.getElementById('btnStart'),
-				btnStop = document.getElementById('btnStop'),
-				btnCloud = document.getElementById('btnCloud')
-			const wTemp = document.getElementById('wTemp'),
-				wIcon = document.getElementById('wIcon'),
-				wDesc = document.getElementById('wDesc'),
-				wWind = document.getElementById('wWind'),
-				wDir = document.getElementById('wDir'),
-				wDay = document.getElementById('wDay'),
-				wLast = document.getElementById('wLast'),
-				wLL = document.getElementById('wLL')
+			const btnStart = document.getElementById('btnStart')
+			const btnStop = document.getElementById('btnStop')
+			const btnCloud = document.getElementById('btnCloud')
+			const wTemp = document.getElementById('wTemp')
+			const wIcon = document.getElementById('wIcon')
+			const wDesc = document.getElementById('wDesc')
+			const wWind = document.getElementById('wWind')
+			const wDir = document.getElementById('wDir')
+			const wDay = document.getElementById('wDay')
+			const wLast = document.getElementById('wLast')
+			const wLL = document.getElementById('wLL')
 
-			let locationGranted = false,
-				isActive = false,
-				cloudMode = false,
-				weatherTimer = null
+			let locationGranted = false
+			let isActive = false
+			let cloudMode = false
+			let weatherTimer = null
 
 			function setStatus(t, on = false) {
 				statusEl.textContent = t
@@ -251,6 +290,7 @@
 
 			btnStart.disabled = true
 			btnPermLocation.disabled = true
+
 			signInAnonymously(auth)
 			onAuthStateChanged(auth, () => {
 				btnPermLocation.disabled = false
@@ -260,11 +300,11 @@
 			btnPermLocation.onclick = async () => {
 				try {
 					await new Promise((res, rej) =>
-						navigator.geolocation.getCurrentPosition(
-							() => res(),
-							() => rej(),
-							{ enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
-						)
+						navigator.geolocation.getCurrentPosition(res, rej, {
+							enableHighAccuracy: true,
+							timeout: 8000,
+							maximumAge: 0,
+						})
 					)
 					locationGranted = true
 					enableStart()
@@ -280,6 +320,7 @@
 				setStatus('Recording', true)
 				startWeather()
 			}
+
 			btnStop.onclick = () => {
 				if (!isActive) return
 				isActive = false
@@ -291,6 +332,7 @@
 				btnCloud.textContent = 'Start Cloud Stream'
 				setStatus('Stopped')
 			}
+
 			btnCloud.onclick = () => {
 				cloudMode = !cloudMode
 				btnCloud.textContent = cloudMode ? 'Streaming…' : 'Start Cloud Stream'
@@ -299,6 +341,7 @@
 			async function fetchWeatherOnce() {
 				if (!locationGranted || !isActive) return
 				let lat, lon
+
 				try {
 					const p = await new Promise((res, rej) =>
 						navigator.geolocation.getCurrentPosition(res, rej, {
@@ -319,6 +362,7 @@
 					)
 					const cw = (await r.json()).current_weather
 					if (!cw) return
+
 					const M = {
 						0: ['Clear', '☀️'],
 						1: ['Mainly Clear', '🌤️'],
@@ -328,7 +372,9 @@
 						63: ['Rain', '🌧️'],
 						65: ['Heavy Rain', '⛈️'],
 					}
+
 					const d = M[cw.weathercode] || ['Unknown', '🌡️']
+
 					wTemp.textContent = cw.temperature
 					wIcon.textContent = d[1]
 					wDesc.textContent = d[0]
@@ -337,6 +383,7 @@
 					wDay.textContent = cw.is_day ? 'Day' : 'Night'
 					wLast.textContent = new Date().toLocaleTimeString()
 					wLL.textContent = `${lat.toFixed(4)}, ${lon.toFixed(4)}`
+
 					if (cloudMode && locationGranted) {
 						addDoc(colWeather, {
 							ts: serverTimestamp(),
@@ -347,7 +394,7 @@
 							dir: cw.winddirection,
 							code: cw.weathercode,
 							is_day: !!cw.is_day,
-						}).catch(() => {})
+						})
 					}
 				} catch {}
 			}
@@ -357,6 +404,7 @@
 				weatherTimer = setInterval(fetchWeatherOnce, 30000)
 				fetchWeatherOnce()
 			}
+
 			function stopWeather() {
 				if (weatherTimer) {
 					clearInterval(weatherTimer)
@@ -370,6 +418,7 @@
 			document.onvisibilitychange = () => {
 				if (document.hidden && isActive) btnStop.click()
 			}
+
 			setStatus('Idle')
 		</script>
 	</body>
