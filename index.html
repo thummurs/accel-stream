@@ -5,6 +5,11 @@
 		<meta name="viewport" content="width=device-width,initial-scale=1" />
 		<title>Accelerometer + Weather Logger</title>
 		<style>
+			*,
+			*::before,
+			*::after {
+				box-sizing: border-box;
+			}
 			:root {
 				--bg: #0f172a;
 				--panel: #111827;
@@ -28,9 +33,11 @@
 				display: flex;
 				justify-content: center;
 				align-items: flex-start;
+				overflow-x: hidden;
 			}
 			main.card {
-				width: min(95vw, 1000px);
+				width: 100%;
+				max-width: 900px;
 				margin: 20px;
 				background: var(--card);
 				border: 1px solid var(--border);
@@ -56,6 +63,7 @@
 				gap: 14px;
 				margin-bottom: 12px;
 				width: 100%;
+				padding: 0 10px;
 			}
 			.btncol {
 				display: grid;
@@ -66,6 +74,10 @@
 			}
 			button {
 				all: unset;
+				-webkit-appearance: none;
+				display: block;
+				width: 100%;
+				box-sizing: border-box;
 				cursor: pointer;
 				font-weight: 600;
 				padding: 14px 16px;
@@ -73,7 +85,6 @@
 				text-align: center;
 				background: #1f2937;
 				border: 1px solid #293241;
-				width: 100%;
 			}
 			button.primary {
 				background: var(--accent);
@@ -88,6 +99,9 @@
 			button[disabled] {
 				opacity: 0.45;
 				cursor: not-allowed;
+			}
+			.btncol button:not(:last-child) {
+				margin-bottom: 6px;
 			}
 			.led {
 				width: 10px;
