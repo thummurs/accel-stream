@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width,initial-scale=1" />
-		<title>Accelerometer + Weather Logger</title>
+		<title>Sensor Logger – App Selector</title>
 		<style>
 			*,
 			*::before,
@@ -12,544 +12,171 @@
 			}
 			:root {
 				--bg: #0f172a;
-				--panel: #111827;
+				--card: #0b1225;
 				--ink: #e5e7eb;
 				--muted: #9ca3af;
 				--accent: #22d3ee;
-				--ok: #10b981;
-				--warn: #f59e0b;
-				--card: #0b1225;
 				--border: #1f2937;
+				--hover: #0ea5b6;
 			}
 			html,
 			body {
 				margin: 0;
-				padding: 0;
 				height: 100%;
 				font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
 					Helvetica, Arial;
 				background: var(--bg);
 				color: var(--ink);
 				display: flex;
+				align-items: center;
 				justify-content: center;
-				align-items: flex-start;
-				overflow-x: hidden;
 			}
-			main.card {
+			main {
 				width: 100%;
-				max-width: 900px;
+				max-width: 960px;
 				margin: 20px;
+				padding: 24px;
 				background: var(--card);
 				border: 1px solid var(--border);
 				border-radius: 18px;
-				padding: 20px;
 				box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
 			}
 			h1 {
 				margin: 0 0 8px;
-				font-size: 22px;
 				text-align: center;
+				font-size: 24px;
 			}
-			p.meta {
+			p.sub {
+				margin: 0 0 18px;
 				text-align: center;
 				color: var(--muted);
-				margin: 0 0 16px;
-				font-size: 13px;
+				font-size: 14px;
 			}
-			.row {
-				display: flex;
-				justify-content: center;
-				align-items: center;
-				gap: 14px;
-				margin-bottom: 12px;
-				width: 100%;
-				padding: 0 10px;
-			}
-			.btncol {
+			.grid {
 				display: grid;
-				grid-template-columns: 1fr;
+				gap: 16px;
+				grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+				margin-top: 12px;
+			}
+			.card {
+				background: #0b142a;
+				border: 1px solid var(--border);
+				border-radius: 14px;
+				padding: 18px;
+				display: flex;
+				flex-direction: column;
+				justify-content: space-between;
+				transition: transform 0.15s ease, border-color 0.15s ease;
+				min-height: 180px;
+			}
+			.card:hover {
+				transform: translateY(-2px);
+				border-color: #22304a;
+			}
+			.title {
+				font-weight: 700;
+				font-size: 18px;
+				margin: 0 0 6px;
+			}
+			.desc {
+				color: var(--muted);
+				font-size: 14px;
+				margin: 0 0 16px;
+				line-height: 1.35;
+			}
+			.actions {
+				margin-top: auto;
+				display: flex;
 				gap: 10px;
-				width: 100%;
-				max-width: 560px;
+				flex-wrap: wrap;
 			}
-			button {
-				all: unset;
-				-webkit-appearance: none;
-				display: block;
-				width: 100%;
-				box-sizing: border-box;
-				cursor: pointer;
-				font-weight: 600;
-				padding: 14px 16px;
-				border-radius: 12px;
-				text-align: center;
-				background: #1f2937;
+			a.btn {
+				text-decoration: none;
+				display: inline-block;
+				font-weight: 700;
+				padding: 12px 14px;
+				border-radius: 10px;
 				border: 1px solid #293241;
+				background: #1f2937;
+				color: var(--ink);
 			}
-			button.primary {
+			a.btn.primary {
 				background: var(--accent);
 				color: #052b33;
 				border-color: #0ea5b6;
 			}
-			button.warn {
-				background: #1f2937;
-				border-color: #334155;
-				color: #fca5a5;
+			a.btn:hover {
+				border-color: var(--hover);
 			}
-			button[disabled] {
-				opacity: 0.45;
-				cursor: not-allowed;
-			}
-			.btncol button:not(:last-child) {
-				margin-bottom: 6px;
-			}
-			.led {
-				width: 10px;
-				height: 10px;
-				border-radius: 50%;
-				display: inline-block;
-				margin-right: 8px;
-				vertical-align: middle;
-			}
-			.led.on {
-				background: var(--ok);
-				box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
-			}
-			.led.off {
-				background: #374151;
-			}
-			.grid {
-				display: grid;
-				grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
-				gap: 10px;
-				margin-top: 12px;
-			}
-			.tile {
-				background: #0b142a;
-				border: 1px solid var(--border);
-				border-radius: 12px;
-				padding: 8px 6px 10px;
-				text-align: center;
-			}
-			.label {
-				color: var(--muted);
-				font-size: 12px;
-				margin-bottom: 4px;
-			}
-			.val {
-				font-variant-numeric: tabular-nums;
-				font-size: 22px;
-			}
-			.ballWrap {
+			footer {
 				margin-top: 18px;
-				height: 160px;
-				background: #081021;
-				border: 1px solid #14203b;
-				border-radius: 14px;
-				position: relative;
-				overflow: hidden;
-			}
-			.ball {
-				width: 32px;
-				height: 32px;
-				border-radius: 50%;
-				position: absolute;
-				left: 50%;
-				top: 50%;
-				transform: translate(-50%, -50%);
-				background: radial-gradient(
-					circle at 30% 30%,
-					#fff 0,
-					#abdff5 25%,
-					#22d3ee 70%,
-					#0ea5b6 100%
-				);
-				box-shadow: 0 6px 18px rgba(34, 211, 238, 0.35);
-			}
-			.footer {
-				margin-top: 14px;
+				text-align: center;
 				color: var(--muted);
 				font-size: 12px;
-				text-align: center;
 			}
-			.weatherWrap {
-				display: grid;
-				grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-				gap: 10px;
-				margin-top: 14px;
+			.badge {
+				display: inline-block;
+				padding: 2px 8px;
+				border: 1px solid var(--border);
+				border-radius: 999px;
+				font-size: 11px;
+				color: var(--muted);
 			}
 		</style>
 	</head>
 	<body>
-		<main class="card">
-			<h1>Accelerometer + Weather Logger</h1>
-
-			<div class="row">
-				<span class="led off" id="led"></span>
-				<span id="status">Idle</span>
-			</div>
-
-			<div class="row">
-				<div class="btncol">
-					<button id="btnPermMotion" class="primary">Grant Motion</button>
-					<button id="btnPermLocation" class="primary">Grant Location</button>
-				</div>
-			</div>
-
-			<div class="row">
-				<div class="btncol">
-					<button id="btnStart" disabled>Start</button>
-					<button id="btnStop" disabled class="warn">Stop</button>
-					<button id="btnCloud" disabled>Start Cloud Stream</button>
-				</div>
-			</div>
+		<main>
+			<h1>Choose an App</h1>
+			<p class="sub">
+				Select the logger you want to run. Each app only requests the permission
+				it needs.
+			</p>
 
 			<div class="grid">
-				<div class="tile">
-					<div class="label">Time (s)</div>
-					<div class="val" id="timeVal">0.000</div>
-				</div>
-				<div class="tile">
-					<div class="label">Interval (ms)</div>
-					<div class="val" id="dtVal">—</div>
-				</div>
-				<div class="tile">
-					<div class="label">Samples</div>
-					<div class="val" id="nVal">0</div>
-				</div>
-			</div>
-			<div class="grid">
-				<div class="tile">
-					<div class="label">ax</div>
-					<div class="val" id="axVal">0.00</div>
-				</div>
-				<div class="tile">
-					<div class="label">ay</div>
-					<div class="val" id="ayVal">0.00</div>
-				</div>
-				<div class="tile">
-					<div class="label">az</div>
-					<div class="val" id="azVal">0.00</div>
-				</div>
-			</div>
-			<div class="grid">
-				<div class="tile">
-					<div class="label">|a|</div>
-					<div class="val" id="amagVal">0.00</div>
-				</div>
-				<div class="tile">
-					<div class="label">HPF |a|</div>
-					<div class="val" id="amagHPFVal">0.00</div>
-				</div>
-				<div class="tile">
-					<div class="label">Hz</div>
-					<div class="val" id="hzVal">—</div>
-				</div>
+				<section class="card">
+					<div>
+						<div class="title">Accelerometer Logger</div>
+						<p class="desc">
+							Visualize real-time device acceleration, show HPF magnitude and
+							sampling rate, and optionally stream samples to Firestore.
+						</p>
+						<span class="badge">Requires: Motion</span>
+					</div>
+					<div class="actions">
+						<a class="btn primary" href="./accel.html">Open Accelerometer</a>
+						<a class="btn" href="./accel.html" target="_blank" rel="noopener">
+							Open in new tab
+						</a>
+					</div>
+				</section>
+
+				<section class="card">
+					<div>
+						<div class="title">Weather Logger</div>
+						<p class="desc">
+							Fetch current weather via Open-Meteo at your location and
+							optionally stream readings (temp, wind, code) to Firestore every
+							30s.
+						</p>
+						<span class="badge">Requires: Location</span>
+					</div>
+					<div class="actions">
+						<a class="btn primary" href="./weather.html">Open Weather</a>
+						<a class="btn" href="./weather.html" target="_blank" rel="noopener">
+							Open in new tab
+						</a>
+					</div>
+				</section>
 			</div>
 
-			<div class="ballWrap"><div id="ball" class="ball"></div></div>
-
-			<div class="weatherWrap">
-				<div class="tile">
-					<div class="label">Temp</div>
-					<div class="val">
-						<span id="wTemp">--</span>
-						°C
-						<span id="wIcon">⛅</span>
-					</div>
-					<div class="label" id="wDesc">—</div>
-				</div>
-				<div class="tile">
-					<div class="label">Wind</div>
-					<div class="val">
-						<span id="wWind">--</span>
-						km/h
-					</div>
-					<div class="label">
-						Dir
-						<span id="wDir">--</span>
-						° |
-						<span id="wDay">Day/Night</span>
-					</div>
-				</div>
-				<div class="tile">
-					<div class="label">Last Weather</div>
-					<div class="val" id="wLast">—</div>
-				</div>
-			</div>
+			<footer>
+				Firebase project:
+				<code>uc-assignment-3-7ac2a</code>
+				• Collections:
+				<code>accelerometerData</code>
+				,
+				<code>weatherData</code>
+			</footer>
 		</main>
-
-		<script type="module">
-			import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js'
-			import {
-				getAuth,
-				signInAnonymously,
-				onAuthStateChanged,
-			} from 'https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js'
-			import {
-				getFirestore,
-				collection,
-				addDoc,
-				serverTimestamp,
-			} from 'https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js'
-
-			const firebaseConfig = {
-				apiKey: 'AIzaSyAu7YQkG2xRPNs9aGN4TUS3_LpInye72WA',
-				authDomain: 'uc-assignment-3-7ac2a.firebaseapp.com',
-				projectId: 'uc-assignment-3-7ac2a',
-				storageBucket: 'uc-assignment-3-7ac2a.firebasestorage.app',
-				messagingSenderId: '369697845903',
-				appId: '1:369697845903:web:05bccb3b0e7ba24c65b6fa',
-				measurementId: 'G-9BNGZDZ8VQ',
-			}
-			const app = initializeApp(firebaseConfig)
-			const auth = getAuth(app)
-			const db = getFirestore(app)
-			const colAccel = collection(db, 'accelerometerData')
-			const colWeather = collection(db, 'weatherData')
-
-			const led = document.getElementById('led'),
-				statusEl = document.getElementById('status')
-			const btnPermMotion = document.getElementById('btnPermMotion'),
-				btnPermLocation = document.getElementById('btnPermLocation')
-			const btnStart = document.getElementById('btnStart'),
-				btnStop = document.getElementById('btnStop'),
-				btnCloud = document.getElementById('btnCloud')
-
-			const timeVal = document.getElementById('timeVal'),
-				dtVal = document.getElementById('dtVal'),
-				nVal = document.getElementById('nVal'),
-				hzVal = document.getElementById('hzVal'),
-				axVal = document.getElementById('axVal'),
-				ayVal = document.getElementById('ayVal'),
-				azVal = document.getElementById('azVal'),
-				amagVal = document.getElementById('amagVal'),
-				amagHPFVal = document.getElementById('amagHPFVal'),
-				ball = document.getElementById('ball')
-			const wTemp = document.getElementById('wTemp'),
-				wIcon = document.getElementById('wIcon'),
-				wDesc = document.getElementById('wDesc'),
-				wWind = document.getElementById('wWind'),
-				wDir = document.getElementById('wDir'),
-				wDay = document.getElementById('wDay'),
-				wLast = document.getElementById('wLast')
-
-			let motionGranted = false,
-				locationGranted = false,
-				isActive = false,
-				cloudMode = false
-			let startT,
-				lastT,
-				n = 0,
-				sumDt = 0,
-				gx = 0,
-				gy = 0,
-				gz = 0,
-				lastWrite = 0
-			let weatherTimer = null
-
-			function setStatus(t, on = false) {
-				statusEl.textContent = t
-				led.className = 'led ' + (on ? 'on' : 'off')
-			}
-			function enableStart() {
-				btnStart.disabled = !(motionGranted || locationGranted)
-			}
-
-			btnStart.disabled = true
-			btnPermMotion.disabled = true
-			btnPermLocation.disabled = true
-			signInAnonymously(auth)
-			onAuthStateChanged(auth, () => {
-				btnPermMotion.disabled = false
-				btnPermLocation.disabled = false
-				enableStart()
-			})
-
-			btnPermMotion.onclick = async () => {
-				try {
-					if (
-						typeof DeviceMotionEvent !== 'undefined' &&
-						typeof DeviceMotionEvent.requestPermission === 'function'
-					) {
-						const st = await DeviceMotionEvent.requestPermission()
-						if (st !== 'granted') throw 0
-					}
-					motionGranted = true
-					enableStart()
-				} catch {}
-			}
-			btnPermLocation.onclick = async () => {
-				try {
-					await new Promise((res, rej) =>
-						navigator.geolocation.getCurrentPosition(
-							() => res(),
-							() => rej(),
-							{ enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
-						)
-					)
-					locationGranted = true
-					enableStart()
-				} catch {}
-			}
-
-			btnStart.onclick = () => {
-				if (isActive) return
-				isActive = true
-				startT = performance.now()
-				lastT = startT
-				n = 0
-				sumDt = 0
-				gx = gy = gz = 0
-				btnStart.disabled = true
-				btnStop.disabled = false
-				btnCloud.disabled = false
-				setStatus('Recording', true)
-				if (motionGranted)
-					window.addEventListener('devicemotion', onMotion, { passive: true })
-				if (locationGranted) startWeather()
-			}
-			btnStop.onclick = () => {
-				if (!isActive) return
-				isActive = false
-				window.removeEventListener('devicemotion', onMotion, { passive: true })
-				stopWeather()
-				btnStart.disabled = false
-				btnStop.disabled = true
-				btnCloud.disabled = true
-				cloudMode = false
-				btnCloud.textContent = 'Start Cloud Stream'
-				setStatus('Stopped')
-			}
-			btnCloud.onclick = () => {
-				cloudMode = !cloudMode
-				btnCloud.textContent = cloudMode ? 'Streaming…' : 'Start Cloud Stream'
-			}
-
-			function onMotion(e) {
-				if (!isActive || !motionGranted) return
-				const t = performance.now(),
-					dt = (t - lastT) / 1000
-				lastT = t
-				const a = e.acceleration || e.accelerationIncludingGravity || {},
-					ax = a.x || 0,
-					ay = a.y || 0,
-					az = a.z || 0
-				gx = 0.92 * gx + 0.08 * ax
-				gy = 0.92 * gy + 0.08 * ay
-				gz = 0.92 * gz + 0.08 * az
-				const lx = ax - gx,
-					ly = ay - gy,
-					lz = az - gz
-				const amag = Math.hypot(ax, ay, az),
-					amagHPF = Math.hypot(lx, ly, lz)
-				if (n > 0) sumDt += dt
-				n++
-				timeVal.textContent = ((t - startT) / 1000).toFixed(3)
-				dtVal.textContent = (dt * 1000).toFixed(1)
-				nVal.textContent = n
-				hzVal.textContent = n > 1 ? (1 / (sumDt / (n - 1))).toFixed(2) : '—'
-				axVal.textContent = ax.toFixed(2)
-				ayVal.textContent = ay.toFixed(2)
-				azVal.textContent = az.toFixed(2)
-				amagVal.textContent = amag.toFixed(2)
-				amagHPFVal.textContent = amagHPF.toFixed(2)
-				const bx = Math.max(-100, Math.min(100, lx * 3)),
-					by = Math.max(-60, Math.min(60, ly * 3))
-				ball.style.transform = `translate(calc(-50% + ${bx}px), calc(-50% + ${by}px))`
-				if (cloudMode && motionGranted) {
-					const now = performance.now()
-					if (now - lastWrite >= 100) {
-						lastWrite = now
-						addDoc(colAccel, {
-							ts: serverTimestamp(),
-							time: (t - startT) / 1000,
-							ax,
-							ay,
-							az,
-							lx,
-							ly,
-							lz,
-							amag,
-							amagHPF,
-						}).catch(() => {})
-					}
-				}
-			}
-
-			async function fetchWeatherOnce() {
-				if (!locationGranted || !isActive) return
-				let lat, lon
-				try {
-					const p = await new Promise((res, rej) =>
-						navigator.geolocation.getCurrentPosition(res, rej, {
-							enableHighAccuracy: true,
-							timeout: 8000,
-							maximumAge: 0,
-						})
-					)
-					lat = p.coords.latitude
-					lon = p.coords.longitude
-				} catch {
-					return
-				}
-				try {
-					const r = await fetch(
-						`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`
-					)
-					const cw = (await r.json()).current_weather
-					if (!cw) return
-					const M = {
-						0: ['Clear', '☀️'],
-						1: ['Mainly Clear', '🌤️'],
-						2: ['Partly Cloudy', '⛅'],
-						3: ['Overcast', '☁️'],
-						61: ['Light Rain', '🌧️'],
-						63: ['Rain', '🌧️'],
-						65: ['Heavy Rain', '⛈️'],
-					}
-					const d = M[cw.weathercode] || ['Unknown', '🌡️']
-					wTemp.textContent = cw.temperature
-					wIcon.textContent = d[1]
-					wDesc.textContent = d[0]
-					wWind.textContent = cw.windspeed
-					wDir.textContent = cw.winddirection
-					wDay.textContent = cw.is_day ? 'Day' : 'Night'
-					wLast.textContent = new Date().toLocaleTimeString()
-					if (cloudMode && locationGranted) {
-						addDoc(colWeather, {
-							ts: serverTimestamp(),
-							lat,
-							lon,
-							temperature: cw.temperature,
-							wind: cw.windspeed,
-							dir: cw.winddirection,
-							code: cw.weathercode,
-							is_day: !!cw.is_day,
-						}).catch(() => {})
-					}
-				} catch {}
-			}
-
-			function startWeather() {
-				stopWeather()
-				weatherTimer = setInterval(fetchWeatherOnce, 30000)
-				fetchWeatherOnce()
-			}
-			function stopWeather() {
-				if (weatherTimer) {
-					clearInterval(weatherTimer)
-					weatherTimer = null
-				}
-			}
-
-			window.onbeforeunload = () => {
-				if (isActive) btnStop.click()
-			}
-			document.onvisibilitychange = () => {
-				if (document.hidden && isActive) btnStop.click()
-			}
-			setStatus('Idle')
-		</script>
 	</body>
 </html>
