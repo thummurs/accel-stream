@@ -525,7 +525,7 @@
 							wind: cw.windspeed,
 							dir: cw.winddirection,
 							code: cw.weathercode,
-							is_day: cw.is_day,
+							is_day: !!cw.is_day,
 						}).catch(() => {})
 					}
 				} catch {}
