@@ -33,6 +33,7 @@
 			}
 			main.card {
 				width: 100%;
+				overflow: hidden;
 				max-width: 700px;
 				margin: 20px;
 				background: var(--card);
@@ -62,16 +63,28 @@
 				max-width: 460px;
 			}
 			button {
-				all: unset;
+				-webkit-appearance: none;
+				appearance: none;
 				display: block;
 				width: 100%;
+				max-width: 100%;
+				box-sizing: border-box;
 				cursor: pointer;
+				user-select: none;
+				-webkit-tap-highlight-color: transparent;
+
+				font: inherit;
 				font-weight: 600;
+				text-align: center;
 				padding: 14px 16px;
 				border-radius: 12px;
-				text-align: center;
+
 				background: #1f2937;
 				border: 1px solid #293241;
+				color: var(--ink);
+			}
+			button:active {
+				transform: translateY(1px);
 			}
 			button.primary {
 				background: var(--accent);

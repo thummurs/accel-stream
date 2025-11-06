@@ -5,7 +5,6 @@
 		<meta name="viewport" content="width=device-width,initial-scale=1" />
 		<title>Accelerometer Logger</title>
 		<style>
-			/* --- Reset & base --- */
 			*,
 			*::before,
 			*::after {
@@ -40,10 +39,10 @@
 					max(16px, env(safe-area-inset-bottom));
 			}
 
-			/* --- container --- */
 			main.card {
 				width: 100%;
-				max-width: 440px; /* tighter for phones */
+				overflow: hidden;
+				max-width: 440px;
 				background: var(--panel);
 				border: 1px solid var(--border);
 				border-radius: 16px;
@@ -57,14 +56,6 @@
 				line-height: 1.2;
 			}
 
-			/* status line */
-			.statusRow {
-				display: flex;
-				align-items: center;
-				justify-content: center;
-				gap: 8px;
-				margin: 4px 0 12px;
-			}
 			.led {
 				width: 8px;
 				height: 8px;
@@ -89,20 +80,27 @@
 				gap: 10px;
 			}
 			button {
-				all: unset;
+				-webkit-appearance: none;
+				appearance: none;
 				display: block;
 				width: 100%;
+				max-width: 100%;
+				box-sizing: border-box; /* <-- keep padding inside width */
 				cursor: pointer;
 				user-select: none;
 				-webkit-tap-highlight-color: transparent;
+
+				font: inherit;
 				font-weight: 700;
 				letter-spacing: 0.2px;
 				text-align: center;
 				padding: 13px 14px;
 				border-radius: 12px;
+
 				background: #152036;
 				border: 1px solid #21304c;
 				color: var(--ink);
+
 				transition: transform 0.06s ease, border-color 0.15s ease,
 					background 0.15s ease;
 			}
@@ -122,12 +120,10 @@
 				cursor: not-allowed;
 			}
 
-			/* sections spacing */
 			.row {
 				margin: 0 0 12px;
 			}
 
-			/* metrics */
 			.grid {
 				display: grid;
 				gap: 10px;
@@ -161,7 +157,6 @@
 				font-size: 22px;
 			}
 
-			/* ball */
 			.ballWrap {
 				margin-top: 12px;
 				height: 140px;
