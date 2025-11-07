@@ -10,18 +10,8 @@
 			*::after {
 				box-sizing: border-box;
 			}
-			html,
-			body {
-				margin: 0;
-				height: 100%;
-				font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-					Helvetica, Arial;
-				-webkit-font-smoothing: antialiased;
-				-moz-osx-font-smoothing: grayscale;
-				background: #0b1021;
-				color: #e7eaf0;
-			}
 			:root {
+				--bg: #0b1021;
 				--panel: #0e152b;
 				--card: #0b142a;
 				--ink: #e7eaf0;
@@ -31,34 +21,54 @@
 				--border: #1b2740;
 				--ok: #10b981;
 			}
+			html,
+			body {
+				margin: 0;
+				height: 100%;
+				font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+					Helvetica, Arial;
+				background: var(--bg);
+				color: var(--ink);
+			}
 			body {
 				display: flex;
 				justify-content: center;
 				align-items: flex-start;
 				padding: max(16px, env(safe-area-inset-top)) 16px
 					max(16px, env(safe-area-inset-bottom));
+				-webkit-text-size-adjust: 100%;
 			}
-
 			main.card {
 				width: 100%;
-				overflow: hidden;
 				max-width: 440px;
 				background: var(--panel);
 				border: 1px solid var(--border);
-				border-radius: 16px;
+				border-radius: 18px;
 				padding: 16px;
 				box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+				overflow: hidden;
 			}
 			h1 {
-				margin: 2px 0 6px;
+				margin: 0 0 10px;
 				text-align: center;
-				font-size: 20px;
-				line-height: 1.2;
+				font-size: 22px;
 			}
-
+			.row {
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				gap: 14px;
+				margin: 0 0 12px;
+				padding: 0 10px;
+			}
+			.row.status {
+				gap: 8px;
+				font-size: 14px;
+				color: var(--muted);
+			}
 			.led {
-				width: 8px;
-				height: 8px;
+				width: 9px;
+				height: 9px;
 				border-radius: 50%;
 			}
 			.led.on {
@@ -68,16 +78,12 @@
 			.led.off {
 				background: #44506b;
 			}
-			#status {
-				color: var(--muted);
-				font-size: 13px;
-			}
-
-			/* buttons */
 			.btncol {
 				display: grid;
 				grid-template-columns: 1fr;
 				gap: 10px;
+				width: 100%;
+				max-width: 460px;
 			}
 			button {
 				-webkit-appearance: none;
@@ -85,22 +91,19 @@
 				display: block;
 				width: 100%;
 				max-width: 100%;
-				box-sizing: border-box; /* <-- keep padding inside width */
+				box-sizing: border-box;
 				cursor: pointer;
 				user-select: none;
 				-webkit-tap-highlight-color: transparent;
-
 				font: inherit;
 				font-weight: 700;
 				letter-spacing: 0.2px;
 				text-align: center;
-				padding: 13px 14px;
+				padding: 14px 16px;
 				border-radius: 12px;
-
 				background: #152036;
 				border: 1px solid #21304c;
 				color: var(--ink);
-
 				transition: transform 0.06s ease, border-color 0.15s ease,
 					background 0.15s ease;
 			}
@@ -119,15 +122,10 @@
 				opacity: 0.55;
 				cursor: not-allowed;
 			}
-
-			.row {
-				margin: 0 0 12px;
-			}
-
 			.grid {
 				display: grid;
-				gap: 10px;
-				margin-top: 10px;
+				gap: 12px;
+				margin-top: 12px;
 				grid-template-columns: repeat(2, minmax(0, 1fr));
 			}
 			@media (min-width: 500px) {
@@ -135,14 +133,13 @@
 					grid-template-columns: repeat(3, minmax(0, 1fr));
 				}
 			}
-
 			.tile {
 				background: var(--card);
 				border: 1px solid var(--border);
 				border-radius: 12px;
 				padding: 10px 8px;
 				text-align: center;
-				min-height: 72px;
+				min-height: 80px;
 				display: flex;
 				flex-direction: column;
 				justify-content: center;
@@ -156,7 +153,6 @@
 				font-variant-numeric: tabular-nums;
 				font-size: 22px;
 			}
-
 			.ballWrap {
 				margin-top: 12px;
 				height: 140px;
@@ -189,22 +185,16 @@
 		<main class="card">
 			<h1>Accelerometer Logger</h1>
 
-			<div class="row">
+			<div class="row status">
 				<span id="led" class="led off"></span>
-				<span id="status">Idle</span>
+				<span id="status">Stopped</span>
 			</div>
 
 			<div class="row">
 				<div class="btncol">
 					<button id="btnPermMotion" class="primary">Grant Motion</button>
-				</div>
-			</div>
-
-			<div class="row">
-				<div class="btncol">
-					<button id="btnStart" disabled>Start</button>
-					<button id="btnStop" disabled class="warn">Stop</button>
-					<button id="btnCloud" disabled>Start Cloud Stream</button>
+					<button id="btnStart" disabled>Start Streaming</button>
+					<button id="btnStop" disabled class="warn">Stop Streaming</button>
 				</div>
 			</div>
 
@@ -275,6 +265,7 @@
 				appId: '1:369697845903:web:05bccb3b0e7ba24c65b6fa',
 				measurementId: 'G-9BNGZDZ8VQ',
 			}
+
 			const app = initializeApp(firebaseConfig)
 			const auth = getAuth(app)
 			const db = getFirestore(app)
@@ -282,24 +273,23 @@
 
 			const led = document.getElementById('led'),
 				statusEl = document.getElementById('status')
-			const btnPermMotion = document.getElementById('btnPermMotion')
-			const btnStart = document.getElementById('btnStart'),
-				btnStop = document.getElementById('btnStop'),
-				btnCloud = document.getElementById('btnCloud')
+			const btnPerm = document.getElementById('btnPermMotion')
+			const btnStart = document.getElementById('btnStart')
+			const btnStop = document.getElementById('btnStop')
+
 			const timeVal = document.getElementById('timeVal'),
 				dtVal = document.getElementById('dtVal'),
 				nVal = document.getElementById('nVal'),
-				hzVal = document.getElementById('hzVal')
-			const axVal = document.getElementById('axVal'),
+				hzVal = document.getElementById('hzVal'),
+				axVal = document.getElementById('axVal'),
 				ayVal = document.getElementById('ayVal'),
 				azVal = document.getElementById('azVal'),
 				amagVal = document.getElementById('amagVal'),
-				amagHPFVal = document.getElementById('amagHPFVal')
-			const ball = document.getElementById('ball')
+				amagHPFVal = document.getElementById('amagHPFVal'),
+				ball = document.getElementById('ball')
 
 			let motionGranted = false,
-				isActive = false,
-				cloudMode = false
+				streaming = false
 			let startT,
 				lastT,
 				n = 0,
@@ -309,23 +299,24 @@
 				gz = 0,
 				lastWrite = 0
 
-			function setStatus(t, on = false) {
-				statusEl.textContent = t
+			function setStatus(txt, on) {
+				statusEl.textContent = txt
 				led.className = 'led ' + (on ? 'on' : 'off')
 			}
-			function enableStart() {
-				btnStart.disabled = !motionGranted
+			function syncButtons() {
+				btnStart.disabled = !motionGranted || streaming
+				btnStop.disabled = !streaming
 			}
 
 			btnStart.disabled = true
-			btnPermMotion.disabled = true
+			btnPerm.disabled = true
 			signInAnonymously(auth)
 			onAuthStateChanged(auth, () => {
-				btnPermMotion.disabled = false
-				enableStart()
+				btnPerm.disabled = false
+				syncButtons()
 			})
 
-			btnPermMotion.onclick = async () => {
+			btnPerm.onclick = async () => {
 				try {
 					if (
 						typeof DeviceMotionEvent !== 'undefined' &&
@@ -335,57 +326,51 @@
 						if (st !== 'granted') throw 0
 					}
 					motionGranted = true
-					enableStart()
+					syncButtons()
 				} catch {}
 			}
 
 			btnStart.onclick = () => {
-				if (isActive) return
-				isActive = true
+				if (streaming || !motionGranted) return
+				streaming = true
+				setStatus('Streaming', true)
+				syncButtons()
 				startT = performance.now()
 				lastT = startT
 				n = 0
 				sumDt = 0
 				gx = gy = gz = 0
-				btnStart.disabled = true
-				btnStop.disabled = false
-				btnCloud.disabled = false
-				setStatus('Recording', true)
 				window.addEventListener('devicemotion', onMotion, { passive: true })
 			}
+
 			btnStop.onclick = () => {
-				if (!isActive) return
-				isActive = false
-				window.removeEventListener('devicemotion', onMotion, { passive: true })
-				btnStart.disabled = false
-				btnStop.disabled = true
-				btnCloud.disabled = true
-				cloudMode = false
-				btnCloud.textContent = 'Start Cloud Stream'
-				setStatus('Stopped')
-			}
-			btnCloud.onclick = () => {
-				cloudMode = !cloudMode
-				btnCloud.textContent = cloudMode ? 'Streaming…' : 'Start Cloud Stream'
+				if (!streaming) return
+				streaming = false
+				setStatus('Stopped', false)
+				syncButtons()
+				window.removeEventListener('devicemotion', onMotion)
 			}
 
 			function onMotion(e) {
-				if (!isActive || !motionGranted) return
+				if (!streaming) return
 				const t = performance.now(),
 					dt = (t - lastT) / 1000
 				lastT = t
-				const a = e.acceleration || e.accelerationIncludingGravity || {},
-					ax = a.x || 0,
+
+				const a = e.acceleration || e.accelerationIncludingGravity || {}
+				const ax = a.x || 0,
 					ay = a.y || 0,
 					az = a.z || 0
+
 				gx = 0.92 * gx + 0.08 * ax
 				gy = 0.92 * gy + 0.08 * ay
 				gz = 0.92 * gz + 0.08 * az
 				const lx = ax - gx,
 					ly = ay - gy,
 					lz = az - gz
-				const amag = Math.hypot(ax, ay, az),
-					amagHPF = Math.hypot(lx, ly, lz)
+
+				const amag = Math.hypot(ax, ay, az)
+				const amagHPF = Math.hypot(lx, ly, lz)
 
 				if (n > 0) sumDt += dt
 				n++
@@ -403,33 +388,32 @@
 					by = Math.max(-60, Math.min(60, ly * 3))
 				ball.style.transform = `translate(calc(-50% + ${bx}px), calc(-50% + ${by}px))`
 
-				if (cloudMode && motionGranted) {
-					const now = performance.now()
-					if (now - lastWrite >= 100) {
-						lastWrite = now
-						addDoc(colAccel, {
-							ts: serverTimestamp(),
-							time: (t - startT) / 1000,
-							ax,
-							ay,
-							az,
-							lx,
-							ly,
-							lz,
-							amag,
-							amagHPF,
-						}).catch(() => {})
-					}
+				const now = performance.now()
+				if (now - lastWrite >= 100) {
+					lastWrite = now
+					addDoc(colAccel, {
+						ts: serverTimestamp(),
+						time: (t - startT) / 1000,
+						ax,
+						ay,
+						az,
+						lx,
+						ly,
+						lz,
+						amag,
+						amagHPF,
+					}).catch(() => {})
 				}
 			}
 
 			window.onbeforeunload = () => {
-				if (isActive) btnStop.click()
+				if (streaming) btnStop.click()
 			}
 			document.onvisibilitychange = () => {
-				if (document.hidden && isActive) btnStop.click()
+				if (document.hidden && streaming) btnStop.click()
 			}
-			setStatus('Idle')
+
+			setStatus('Stopped', false)
 		</script>
 	</body>
 </html>

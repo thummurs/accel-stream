@@ -10,22 +10,24 @@
 			*::after {
 				box-sizing: border-box;
 			}
+			:root {
+				--bg: #0b1021;
+				--card: #0e152b;
+				--panel: #0b142a;
+				--ink: #e7eaf0;
+				--muted: #9aa3b2;
+				--accent: #22d3ee;
+				--accent-ink: #052b33;
+				--border: #1b2740;
+			}
 			html,
 			body {
 				margin: 0;
 				height: 100%;
 				font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
 					Helvetica, Arial;
-				background: #0b1021;
-				color: #e7eaf0;
-			}
-			:root {
-				--card: #0e152b;
-				--panel: #0b142a;
-				--muted: #9aa3b2;
-				--accent: #22d3ee;
-				--accent-ink: #052b33;
-				--border: #1b2740;
+				background: var(--bg);
+				color: var(--ink);
 			}
 			body {
 				display: flex;
@@ -53,7 +55,6 @@
 				color: var(--muted);
 				font-size: 14px;
 			}
-
 			.grid {
 				display: grid;
 				gap: 14px;
@@ -101,7 +102,7 @@
 				border-radius: 10px;
 				border: 1px solid #21304c;
 				background: #152036;
-				color: #e7eaf0;
+				color: var(--ink);
 			}
 			a.btn.primary {
 				background: var(--accent);
@@ -119,18 +120,14 @@
 	<body>
 		<main>
 			<h1>Choose an App</h1>
-			<p class="sub">
-				Select the logger you want to run. Each app only requests the permission
-				it needs.
-			</p>
+			<p class="sub">Each app requests only the permission it needs.</p>
 
 			<div class="grid">
 				<section class="card">
 					<div>
 						<div class="title">Accelerometer Logger</div>
 						<p class="desc">
-							Visualize real-time device acceleration, show HPF magnitude and
-							sampling rate, and optionally stream samples to Firestore.
+							Stream real-time acceleration and derived metrics to Firestore.
 						</p>
 						<span class="badge">Requires: Motion</span>
 					</div>
@@ -146,9 +143,7 @@
 					<div>
 						<div class="title">Weather Logger</div>
 						<p class="desc">
-							Fetch current weather via Open-Meteo at your location and
-							optionally stream readings (temp, wind, code) to Firestore every
-							30s.
+							Stream current weather at your location (Open-Meteo) every 30s.
 						</p>
 						<span class="badge">Requires: Location</span>
 					</div>
@@ -162,7 +157,7 @@
 			</div>
 
 			<footer>
-				Firebase project:
+				Firebase:
 				<code>uc-assignment-3-7ac2a</code>
 				• Collections:
 				<code>accelerometerData</code>

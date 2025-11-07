@@ -4,24 +4,23 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width,initial-scale=1" />
 		<title>Weather Logger</title>
-
 		<style>
 			*,
 			*::before,
 			*::after {
 				box-sizing: border-box;
 			}
-
 			:root {
-				--bg: #0f172a;
-				--card: #0b1225;
-				--ink: #e5e7eb;
-				--muted: #9ca3af;
+				--bg: #0b1021;
+				--panel: #0e152b;
+				--card: #0b142a;
+				--ink: #e7eaf0;
+				--muted: #9aa3b2;
 				--accent: #22d3ee;
+				--accent-ink: #052b33;
+				--border: #1b2740;
 				--ok: #10b981;
-				--border: #1f2937;
 			}
-
 			html,
 			body {
 				margin: 0;
@@ -30,6 +29,8 @@
 					Helvetica, Arial;
 				background: var(--bg);
 				color: var(--ink);
+			}
+			body {
 				display: flex;
 				justify-content: center;
 				align-items: flex-start;
@@ -37,58 +38,46 @@
 					max(16px, env(safe-area-inset-bottom));
 				-webkit-text-size-adjust: 100%;
 			}
-
 			main.card {
 				width: 100%;
-				max-width: 440px; /* mobile-friendly */
-				background: var(--card);
+				max-width: 440px;
+				background: var(--panel);
 				border: 1px solid var(--border);
 				border-radius: 18px;
 				padding: 16px;
-				box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
-				overflow: hidden; /* critical fix */
-				margin-bottom: 24px;
+				box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+				overflow: hidden;
 			}
-
 			h1 {
 				margin: 0 0 10px;
 				text-align: center;
 				font-size: 22px;
 			}
-
 			.row {
 				display: flex;
 				justify-content: center;
 				align-items: center;
 				gap: 14px;
-				margin-bottom: 12px;
+				margin: 0 0 12px;
 				padding: 0 10px;
 			}
-
-			/* Status row refined */
 			.row.status {
 				gap: 8px;
-				margin-bottom: 12px;
 				font-size: 14px;
 				color: var(--muted);
 			}
-
 			.led {
 				width: 9px;
 				height: 9px;
 				border-radius: 50%;
-				display: inline-block;
 			}
-
-			.on {
+			.led.on {
 				background: var(--ok);
 				box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18);
 			}
-
-			.off {
-				background: #374151;
+			.led.off {
+				background: #44506b;
 			}
-
 			.btncol {
 				display: grid;
 				grid-template-columns: 1fr;
@@ -96,100 +85,90 @@
 				width: 100%;
 				max-width: 460px;
 			}
-
-			/* ✅ FIXED BUTTONS */
 			button {
 				-webkit-appearance: none;
 				appearance: none;
 				display: block;
 				width: 100%;
 				max-width: 100%;
-				box-sizing: border-box; /* DO NOT REMOVE */
+				box-sizing: border-box;
 				cursor: pointer;
 				user-select: none;
 				-webkit-tap-highlight-color: transparent;
-
 				font: inherit;
-				font-weight: 600;
+				font-weight: 700;
+				letter-spacing: 0.2px;
 				text-align: center;
 				padding: 14px 16px;
 				border-radius: 12px;
-
-				background: #1f2937;
-				border: 1px solid #293241;
+				background: #152036;
+				border: 1px solid #21304c;
 				color: var(--ink);
+				transition: transform 0.06s ease, border-color 0.15s ease,
+					background 0.15s ease;
 			}
-
+			button:active {
+				transform: translateY(1px);
+			}
 			button.primary {
 				background: var(--accent);
-				color: #052b33;
+				color: var(--accent-ink);
 				border-color: #0ea5b6;
 			}
-
 			button.warn {
-				color: #fca5a5;
+				color: #fda4a4;
 			}
-
 			button[disabled] {
-				opacity: 0.45;
+				opacity: 0.55;
 				cursor: not-allowed;
 			}
-
 			.grid {
 				display: grid;
-				grid-template-columns: repeat(2, minmax(0, 1fr));
 				gap: 12px;
 				margin-top: 12px;
+				grid-template-columns: repeat(2, minmax(0, 1fr));
 			}
-
 			@media (min-width: 500px) {
 				.grid {
 					grid-template-columns: repeat(3, minmax(0, 1fr));
 				}
 			}
-
 			.tile {
-				background: #0b142a;
+				background: var(--card);
 				border: 1px solid var(--border);
 				border-radius: 12px;
 				padding: 10px 8px;
 				text-align: center;
 				min-height: 80px;
+				display: flex;
+				flex-direction: column;
+				justify-content: center;
 			}
-
 			.label {
 				color: var(--muted);
 				font-size: 12px;
 				margin-bottom: 4px;
 			}
-
 			.val {
 				font-variant-numeric: tabular-nums;
 				font-size: 22px;
 			}
 		</style>
 	</head>
-
 	<body>
 		<main class="card">
 			<h1>Weather Logger</h1>
 
 			<div class="row status">
 				<span id="led" class="led off"></span>
-				<span id="status">Idle</span>
+				<span id="status">Stopped</span>
 			</div>
 
 			<div class="row">
 				<div class="btncol">
 					<button id="btnPermLocation" class="primary">Grant Location</button>
-				</div>
-			</div>
-
-			<div class="row">
-				<div class="btncol">
-					<button id="btnStart" disabled>Start</button>
-					<button id="btnStop" disabled class="warn">Stop</button>
-					<button id="btnCloud" disabled>Start Cloud Stream</button>
+					<button id="btnStart" disabled>Start Streaming</button>
+					<button id="btnStop" disabled class="warn">Stop Streaming</button>
 				</div>
 			</div>
 
@@ -203,7 +182,6 @@
 					</div>
 					<div id="wDesc" class="label">—</div>
 				</div>
-
 				<div class="tile">
 					<div class="label">Wind</div>
 					<div class="val">
@@ -217,12 +195,10 @@
 						<span id="wDay">Day/Night</span>
 					</div>
 				</div>
-
 				<div class="tile">
 					<div class="label">Last Weather</div>
 					<div id="wLast" class="val">—</div>
 				</div>
-
 				<div class="tile">
 					<div class="label">Lat,Lon</div>
 					<div id="wLL" class="val">—</div>
@@ -230,7 +206,6 @@
 			</div>
 		</main>
 
-		<!-- ✅ JS unchanged -->
 		<script type="module">
 			import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js'
 			import {
@@ -260,88 +235,75 @@
 			const db = getFirestore(app)
 			const colWeather = collection(db, 'weatherData')
 
-			const led = document.getElementById('led')
-			const statusEl = document.getElementById('status')
-			const btnPermLocation = document.getElementById('btnPermLocation')
+			const led = document.getElementById('led'),
+				statusEl = document.getElementById('status')
+			const btnPerm = document.getElementById('btnPermLocation')
 			const btnStart = document.getElementById('btnStart')
 			const btnStop = document.getElementById('btnStop')
-			const btnCloud = document.getElementById('btnCloud')
-			const wTemp = document.getElementById('wTemp')
-			const wIcon = document.getElementById('wIcon')
-			const wDesc = document.getElementById('wDesc')
-			const wWind = document.getElementById('wWind')
-			const wDir = document.getElementById('wDir')
-			const wDay = document.getElementById('wDay')
-			const wLast = document.getElementById('wLast')
-			const wLL = document.getElementById('wLL')
 
-			let locationGranted = false
-			let isActive = false
-			let cloudMode = false
-			let weatherTimer = null
+			const wTemp = document.getElementById('wTemp'),
+				wIcon = document.getElementById('wIcon'),
+				wDesc = document.getElementById('wDesc'),
+				wWind = document.getElementById('wWind'),
+				wDir = document.getElementById('wDir'),
+				wDay = document.getElementById('wDay'),
+				wLast = document.getElementById('wLast'),
+				wLL = document.getElementById('wLL')
 
-			function setStatus(t, on = false) {
-				statusEl.textContent = t
+			let locationGranted = false,
+				streaming = false,
+				weatherTimer = null
+
+			function setStatus(txt, on) {
+				statusEl.textContent = txt
 				led.className = 'led ' + (on ? 'on' : 'off')
 			}
-			function enableStart() {
-				btnStart.disabled = !locationGranted
+			function syncButtons() {
+				btnStart.disabled = !locationGranted || streaming
+				btnStop.disabled = !streaming
 			}
 
 			btnStart.disabled = true
-			btnPermLocation.disabled = true
-
+			btnPerm.disabled = true
 			signInAnonymously(auth)
 			onAuthStateChanged(auth, () => {
-				btnPermLocation.disabled = false
-				enableStart()
+				btnPerm.disabled = false
+				syncButtons()
 			})
 
-			btnPermLocation.onclick = async () => {
+			btnPerm.onclick = async () => {
 				try {
 					await new Promise((res, rej) =>
-						navigator.geolocation.getCurrentPosition(res, rej, {
-							enableHighAccuracy: true,
-							timeout: 8000,
-							maximumAge: 0,
-						})
+						navigator.geolocation.getCurrentPosition(
+							() => res(),
+							() => rej(),
+							{ enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+						)
 					)
 					locationGranted = true
-					enableStart()
+					syncButtons()
 				} catch {}
 			}
 
 			btnStart.onclick = () => {
-				if (isActive) return
-				isActive = true
-				btnStart.disabled = true
-				btnStop.disabled = false
-				btnCloud.disabled = false
-				setStatus('Recording', true)
+				if (streaming || !locationGranted) return
+				streaming = true
+				setStatus('Streaming', true)
+				syncButtons()
 				startWeather()
 			}
 
 			btnStop.onclick = () => {
-				if (!isActive) return
-				isActive = false
+				if (!streaming) return
+				streaming = false
+				setStatus('Stopped', false)
+				syncButtons()
 				stopWeather()
-				btnStart.disabled = false
-				btnStop.disabled = true
-				btnCloud.disabled = true
-				cloudMode = false
-				btnCloud.textContent = 'Start Cloud Stream'
-				setStatus('Stopped')
-			}
-
-			btnCloud.onclick = () => {
-				cloudMode = !cloudMode
-				btnCloud.textContent = cloudMode ? 'Streaming…' : 'Start Cloud Stream'
 			}
 
 			async function fetchWeatherOnce() {
-				if (!locationGranted || !isActive) return
+				if (!streaming || !locationGranted) return
 				let lat, lon
-
 				try {
 					const p = await new Promise((res, rej) =>
 						navigator.geolocation.getCurrentPosition(res, rej, {
@@ -372,7 +334,6 @@
 						63: ['Rain', '🌧️'],
 						65: ['Heavy Rain', '⛈️'],
 					}
-
 					const d = M[cw.weathercode] || ['Unknown', '🌡️']
 
 					wTemp.textContent = cw.temperature
@@ -384,18 +345,16 @@
 					wLast.textContent = new Date().toLocaleTimeString()
 					wLL.textContent = `${lat.toFixed(4)}, ${lon.toFixed(4)}`
 
-					if (cloudMode && locationGranted) {
-						addDoc(colWeather, {
-							ts: serverTimestamp(),
-							lat,
-							lon,
-							temperature: cw.temperature,
-							wind: cw.windspeed,
-							dir: cw.winddirection,
-							code: cw.weathercode,
-							is_day: !!cw.is_day,
-						})
-					}
+					addDoc(colWeather, {
+						ts: serverTimestamp(),
+						lat,
+						lon,
+						temperature: cw.temperature,
+						wind: cw.windspeed,
+						dir: cw.winddirection,
+						code: cw.weathercode,
+						is_day: !!cw.is_day,
+					}).catch(() => {})
 				} catch {}
 			}
 
@@ -404,7 +363,6 @@
 				weatherTimer = setInterval(fetchWeatherOnce, 30000)
 				fetchWeatherOnce()
 			}
-
 			function stopWeather() {
 				if (weatherTimer) {
 					clearInterval(weatherTimer)
@@ -413,13 +371,13 @@
 			}
 
 			window.onbeforeunload = () => {
-				if (isActive) btnStop.click()
+				if (streaming) btnStop.click()
 			}
 			document.onvisibilitychange = () => {
-				if (document.hidden && isActive) btnStop.click()
+				if (document.hidden && streaming) btnStop.click()
 			}
 
-			setStatus('Idle')
+			setStatus('Stopped', false)
 		</script>
 	</body>
 </html>
